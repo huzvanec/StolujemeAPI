@@ -25,7 +25,7 @@ public final class ApiUtils {
         }
     };
 
-    private static final @NotNull ApiException INVALID_AUTH = new ApiException(HttpStatus.UNAUTHORIZED, "Invalid authorization!");
+    private static final @NotNull ApiException INVALID_AUTH = new ApiException(HttpStatus.UNAUTHORIZED, "Invalid authentication!");
 
     private ApiUtils() {
         throw new AssertionError();
@@ -52,7 +52,7 @@ public final class ApiUtils {
         );
     }
 
-    public static @NotNull Session authorize() {
+    public static @NotNull Session authenticate() {
         final RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
         if (attributes == null)
             throw new RuntimeException("No request attributes are bound to this thread!");
@@ -62,7 +62,7 @@ public final class ApiUtils {
         if (token == null)
             throw new ApiException(
                     HttpStatus.UNAUTHORIZED,
-                    "Missing authorization (bearer token)!"
+                    "Missing authentication (bearer token)!"
             );
         if (!token.startsWith("Bearer "))
             throw ApiUtils.INVALID_AUTH;

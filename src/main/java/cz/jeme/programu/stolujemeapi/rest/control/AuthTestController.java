@@ -21,7 +21,7 @@ public final class AuthTestController {
     @PostMapping("/test-auth")
     @ResponseBody
     public @NotNull Response testAuth() {
-        final Session session = ApiUtils.authorize();
+        final Session session = ApiUtils.authenticate();
         final User user = UserDao.dao().byId(session.userId())
                 .orElseThrow(() -> new RuntimeException("Session user id does not correspond to any users!"));
         return new AuthTestResponse(
