@@ -1,14 +1,16 @@
 package cz.jeme.programu.stolujemeapi.rest.control;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import cz.jeme.programu.stolujemeapi.Stolujeme;
 import cz.jeme.programu.stolujemeapi.db.CryptoUtils;
 import cz.jeme.programu.stolujemeapi.db.user.User;
-import cz.jeme.programu.stolujemeapi.db.verification.StoluVerificationSkeleton;
+import cz.jeme.programu.stolujemeapi.db.user.UserDao;
 import cz.jeme.programu.stolujemeapi.db.verification.Verification;
+import cz.jeme.programu.stolujemeapi.db.verification.VerificationDao;
+import cz.jeme.programu.stolujemeapi.db.verification.VerificationSkeleton;
 import cz.jeme.programu.stolujemeapi.error.ApiErrorType;
 import cz.jeme.programu.stolujemeapi.error.ApiException;
-import cz.jeme.programu.stolujemeapi.rest.RequestUtils;
+import cz.jeme.programu.stolujemeapi.rest.Request;
+import cz.jeme.programu.stolujemeapi.rest.ApiUtils;
 import cz.jeme.programu.stolujemeapi.rest.Response;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -33,35 +35,38 @@ public final class VerificationController {
     @PostMapping("/verification")
     @ResponseBody
     public @NotNull Response verification(final @NotNull @RequestBody VerificationRequest request) {
-        String password = RequestUtils.require(
+        final String password = ApiUtils.require(
                 request.password(),
                 "password"
         );
 
 
-        String email = RequestUtils.require(
+        final String email = ApiUtils.require(
                 request.email(),
                 "email"
         );
 
-        User user = Stolujeme.getDatabase().getUserDao().getByEmail(email)
+        final User user = UserDao.dao().byEmail(email)
                 .orElseThrow(LoginController.supplyIncorrectCredentials());
 
 
         try {
             if (!CryptoUtils.validate(password, user.passwordHash(), user.passwordSalt()))
                 LoginController.throwIncorrectCredentials();
-        } catch (InvalidKeySpecException e) {
+        } catch (final InvalidKeySpecException e) {
             throw new RuntimeException("Could not validate password!", e);
         }
 
         if (user.verified())
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, ApiErrorType.USER_ALREADY_VERIFIED);
 
-        String code = CryptoUtils.genVerification();
+        final String code = CryptoUtils.genVerification();
 
-        Verification verification = Stolujeme.getDatabase().getVerificationDao().insert(
-                new StoluVerificationSkeleton(user.id(), VERIFICATION_DURATION, code)
+        final Verification verification = VerificationDao.dao().insert(VerificationSkeleton.builder()
+                .userId(user.id())
+                .duration(VerificationController.VERIFICATION_DURATION)
+                .code(code)
+                .build()
         );
 
         return new VerificationResponse(
@@ -78,7 +83,7 @@ public final class VerificationController {
 
             @JsonProperty("password")
             @Nullable String password
-    ) {
+    ) implements Request {
     }
 
     public record VerificationResponse(
@@ -96,7 +101,7 @@ public final class VerificationController {
             @NotNull ZonedDateTime expiration
     ) implements Response {
         @Override
-        public @NotNull String getSectionName() {
+        public @NotNull String sectionName() {
             return "verification";
         }
     }

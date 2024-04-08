@@ -15,19 +15,19 @@ public final class CryptoUtils {
     public static final @NotNull String ALGORITHM = "PBKDF2WithHmacSHA512";
     public static final int ITERATIONS = 1 << 16; // 2^16 = 65536
     public static final int KEY_LENGTH_BITS = 512;
-    public static final int KEY_LENGTH_BASE64 = base64Length(KEY_LENGTH_BITS / 8);
+    public static final int KEY_LENGTH_BASE64 = CryptoUtils.base64Length(CryptoUtils.KEY_LENGTH_BITS / 8);
     public static final int SALT_LENGTH_BYTES = 128;
-    public static final int SALT_LENGTH_BASE64 = base64Length(SALT_LENGTH_BYTES);
+    public static final int SALT_LENGTH_BASE64 = CryptoUtils.base64Length(CryptoUtils.SALT_LENGTH_BYTES);
     public static final int TOKEN_LENGTH_BYTES = 64;
-    public static final int TOKEN_LENGTH_BASE64 = base64Length(TOKEN_LENGTH_BYTES);
+    public static final int TOKEN_LENGTH_BASE64 = CryptoUtils.base64Length(CryptoUtils.TOKEN_LENGTH_BYTES);
     public static final int VERIFICATION_LENGTH_BYTES = 64;
-    public static final int VERIFICATION_LENGTH_BASE64 = base64Length(VERIFICATION_LENGTH_BYTES);
+    public static final int VERIFICATION_LENGTH_BASE64 = CryptoUtils.base64Length(CryptoUtils.VERIFICATION_LENGTH_BYTES);
 
     private static final @NotNull SecretKeyFactory KEY_FACTORY;
 
     static {
         try {
-            KEY_FACTORY = SecretKeyFactory.getInstance(ALGORITHM);
+            KEY_FACTORY = SecretKeyFactory.getInstance(CryptoUtils.ALGORITHM);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Could not obtain secret key factory!", e);
         }
@@ -39,40 +39,40 @@ public final class CryptoUtils {
 
 
     public static @NotNull String genSalt() {
-        return gen(SALT_LENGTH_BYTES);
+        return CryptoUtils.gen(CryptoUtils.SALT_LENGTH_BYTES);
     }
 
     public static @NotNull String genToken() {
-        return gen(TOKEN_LENGTH_BYTES);
+        return CryptoUtils.gen(CryptoUtils.TOKEN_LENGTH_BYTES);
     }
 
     public static @NotNull String genVerification() {
-        return gen(VERIFICATION_LENGTH_BYTES);
+        return CryptoUtils.gen(CryptoUtils.VERIFICATION_LENGTH_BYTES);
     }
 
 
     private static @NotNull String gen(final int bytes) {
-        byte[] output = new byte[bytes];
-        SECURE_RANDOM.nextBytes(output);
+        final byte[] output = new byte[bytes];
+        CryptoUtils.SECURE_RANDOM.nextBytes(output);
         return Base64.getEncoder().encodeToString(output);
     }
 
 
     public static @NotNull String hash(final @NotNull String input, final @NotNull String salt) throws InvalidKeySpecException {
-        char[] inputChars = input.toCharArray();
-        byte[] saltBytes = salt.getBytes();
+        final char[] inputChars = input.toCharArray();
+        final byte[] saltBytes = salt.getBytes();
 
-        PBEKeySpec spec = new PBEKeySpec(inputChars, saltBytes, ITERATIONS, KEY_LENGTH_BITS);
+        final PBEKeySpec spec = new PBEKeySpec(inputChars, saltBytes, CryptoUtils.ITERATIONS, CryptoUtils.KEY_LENGTH_BITS);
 
         Arrays.fill(inputChars, Character.MIN_VALUE);
 
-        byte[] inputEncoded = KEY_FACTORY.generateSecret(spec).getEncoded();
+        final byte[] encoded = CryptoUtils.KEY_FACTORY.generateSecret(spec).getEncoded();
         spec.clearPassword();
-        return Base64.getEncoder().encodeToString(inputEncoded);
+        return Base64.getEncoder().encodeToString(encoded);
     }
 
     public static boolean validate(final @NotNull String input, final @NotNull String hash, final @NotNull String salt) throws InvalidKeySpecException {
-        return hash(input, salt).equals(hash);
+        return CryptoUtils.hash(input, salt).equals(hash);
     }
 
     public static int base64Length(final int bytes) {

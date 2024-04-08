@@ -2,7 +2,13 @@
   <profile version="1.0">
     <option name="myName" value="Project Default" />
     <inspection_tool class="AutoCloseableResource" enabled="true" level="WARNING" enabled_by_default="true">
-      <option name="METHOD_MATCHER_CONFIG" value="java.util.Formatter,format,java.io.Writer,append,com.google.common.base.Preconditions,checkNotNull,org.hibernate.Session,close,java.io.PrintWriter,printf,java.io.PrintStream,printf,cz.jeme.programu.stolujemeapi.db.StatementBuilder,build,cz.jeme.programu.stolujemeapi.db.StoluStatementWrapper,requireStatement|statement,cz.jeme.programu.stolujemeapi.db.StatementWrapper,unwrap" />
+      <option name="METHOD_MATCHER_CONFIG" value="java.util.Formatter,format,java.io.Writer,append,com.google.common.base.Preconditions,checkNotNull,org.hibernate.Session,close,java.io.PrintWriter,printf,java.io.PrintStream,printf,cz.jeme.programu.stolujemeapi.db.StatementBuilder,build,cz.jeme.programu.stolujemeapi.db.StoluStatementWrapper,requireStatement|statement,cz.jeme.programu.stolujemeapi.db.StatementWrapper,unwrap,cz.jeme.programu.stolujemeapi.db.StatementWrapperImpl,statement" />
+    </inspection_tool>
+    <inspection_tool class="UnnecessaryQualifierForThis" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="UnqualifiedStaticUsage" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="m_ignoreStaticFieldAccesses" value="false" />
+      <option name="m_ignoreStaticMethodCalls" value="false" />
+      <option name="m_ignoreStaticAccessFromStaticContext" value="false" />
     </inspection_tool>
     <inspection_tool class="unused" enabled="true" level="WEAK WARNING" enabled_by_default="true" editorAttributes="INFO_ATTRIBUTES" checkParameterExcludingHierarchy="false">
       <option name="LOCAL_VARIABLE" value="true" />

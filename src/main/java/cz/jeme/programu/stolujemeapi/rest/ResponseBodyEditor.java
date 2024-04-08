@@ -2,7 +2,7 @@ package cz.jeme.programu.stolujemeapi.rest;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import cz.jeme.programu.stolujemeapi.error.ApiErrorController;
+import cz.jeme.programu.stolujemeapi.error.control.ApiErrorResponse;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.core.MethodParameter;
@@ -15,9 +15,13 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
 import java.time.ZonedDateTime;
 import java.util.Map;
+import java.util.Objects;
 
 @ControllerAdvice
 public final class ResponseBodyEditor implements ResponseBodyAdvice<Object> {
+    private ResponseBodyEditor() {
+    }
+
     @Override
     public boolean supports(final @NotNull MethodParameter returnType,
                             final @NotNull Class<? extends HttpMessageConverter<?>> converterType) {
@@ -25,16 +29,16 @@ public final class ResponseBodyEditor implements ResponseBodyAdvice<Object> {
     }
 
     @Override
-    public @NotNull Object beforeBodyWrite(final @Nullable Object body,
-                                           final @NotNull MethodParameter returnType,
-                                           final @NotNull MediaType selectedContentType,
-                                           final @NotNull Class<? extends HttpMessageConverter<?>> selectedConverterType,
-                                           final @NotNull ServerHttpRequest request,
-                                           final @NotNull ServerHttpResponse response) {
-        if (!(body instanceof Response responseBody)) return body;
-        String endpoint = request.getURI().getPath();
-        return responseBody.getSectionName() == null
-                ? new EmptyWrapper(body, endpoint)
+    public @Nullable Object beforeBodyWrite(final @Nullable Object body,
+                                            final @NotNull MethodParameter returnType,
+                                            final @NotNull MediaType selectedContentType,
+                                            final @NotNull Class<? extends HttpMessageConverter<?>> selectedConverterType,
+                                            final @NotNull ServerHttpRequest request,
+                                            final @NotNull ServerHttpResponse response) {
+        if (!(body instanceof final Response responseBody)) return body;
+        final String endpoint = request.getURI().getPath();
+        return responseBody.sectionName() == null
+                ? new EmptyWrapper(responseBody, endpoint)
                 : new ResponseWrapper(responseBody, endpoint);
     }
 
@@ -48,10 +52,10 @@ public final class ResponseBodyEditor implements ResponseBodyAdvice<Object> {
         @JsonProperty("timestamp")
         protected final @NotNull ZonedDateTime timestamp;
 
-        public EmptyWrapper(final @NotNull Object body,
+        public EmptyWrapper(final @NotNull Response response,
                             final @NotNull String endpoint) {
             this.endpoint = endpoint;
-            success = !(body instanceof ApiErrorController.ApiErrorResponse);
+            success = !(response instanceof ApiErrorResponse);
             timestamp = ZonedDateTime.now();
         }
     }
@@ -63,9 +67,10 @@ public final class ResponseBodyEditor implements ResponseBodyAdvice<Object> {
         public ResponseWrapper(final @NotNull Response response,
                                final @NotNull String endpoint) {
             super(response, endpoint);
-            if (response.getSectionName() == null)
-                throw new IllegalArgumentException("This response does not have a section name!");
-            this.data = Map.of(response.getSectionName(), response);
+            this.data = Map.of(
+                    Objects.requireNonNull(response.sectionName(), "This response does not have a section name!"),
+                    response
+            );
         }
 
         @JsonAnyGetter

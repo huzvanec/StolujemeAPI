@@ -11,7 +11,7 @@ public class MissingParamException extends ApiException {
         super(
                 HttpStatus.UNPROCESSABLE_ENTITY,
                 ApiErrorType.MISSING_PARAMETER,
-                MISSING_PARAM_MESSAGE.formatted(paramName)
+                MissingParamException.MISSING_PARAM_MESSAGE.formatted(paramName)
         );
         this.paramName = paramName;
     }

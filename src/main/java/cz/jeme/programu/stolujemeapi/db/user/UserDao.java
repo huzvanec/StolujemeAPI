@@ -6,9 +6,15 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Optional;
 
 public interface UserDao extends Dao<User, UserSkeleton> {
-    @NotNull Optional<User> getByEmail(final @NotNull String email);
+    static @NotNull UserDao dao() {
+        return UserDaoImpl.INSTANCE;
+    }
 
-    @NotNull Optional<User> getByName(final @NotNull String name);
+    @NotNull
+    Optional<User> byEmail(final @NotNull String email);
+
+    @NotNull
+    Optional<User> byName(final @NotNull String name);
 
     boolean existsEmail(final @NotNull String email);
 

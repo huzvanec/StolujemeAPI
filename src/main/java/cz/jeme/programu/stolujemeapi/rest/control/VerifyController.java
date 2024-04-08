@@ -1,11 +1,12 @@
 package cz.jeme.programu.stolujemeapi.rest.control;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import cz.jeme.programu.stolujemeapi.Stolujeme;
 import cz.jeme.programu.stolujemeapi.db.verification.Verification;
+import cz.jeme.programu.stolujemeapi.db.verification.VerificationDao;
 import cz.jeme.programu.stolujemeapi.error.ApiErrorType;
 import cz.jeme.programu.stolujemeapi.error.InvalidParamException;
-import cz.jeme.programu.stolujemeapi.rest.RequestUtils;
+import cz.jeme.programu.stolujemeapi.rest.ApiUtils;
+import cz.jeme.programu.stolujemeapi.rest.Request;
 import cz.jeme.programu.stolujemeapi.rest.Response;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -22,23 +23,23 @@ public final class VerifyController {
     @PostMapping("/verify")
     @ResponseBody
     public @NotNull Response verify(final @NotNull @RequestBody VerifyRequest request) {
-        String code = RequestUtils.require(request.code(), "code");
+        final String code = ApiUtils.require(request.code(), "code");
 
 
-        Verification verification = Stolujeme.getDatabase().getVerificationDao().getByCode(code)
+        final Verification verification = VerificationDao.dao().byCode(code)
                 .orElseThrow(() -> new InvalidParamException("code", ApiErrorType.VERIFICATION_CODE_INVALID));
 
         if (verification.expired())
             throw new InvalidParamException("code", ApiErrorType.VERIFICATION_EXPIRED);
 
-        Stolujeme.getDatabase().getVerificationDao().verify(verification);
+        VerificationDao.dao().verify(verification);
 
-        return Response.EMPTY;
+        return ApiUtils.emptyResponse();
     }
 
     public record VerifyRequest(
             @JsonProperty("code")
             @Nullable String code
-    ) {
+    ) implements Request {
     }
 }

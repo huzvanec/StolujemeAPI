@@ -1,12 +1,16 @@
 package cz.jeme.programu.stolujemeapi.rest.control;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import cz.jeme.programu.stolujemeapi.Stolujeme;
 import cz.jeme.programu.stolujemeapi.db.CryptoUtils;
+import cz.jeme.programu.stolujemeapi.db.session.Session;
+import cz.jeme.programu.stolujemeapi.db.session.SessionDao;
+import cz.jeme.programu.stolujemeapi.db.session.SessionSkeleton;
 import cz.jeme.programu.stolujemeapi.db.user.User;
+import cz.jeme.programu.stolujemeapi.db.user.UserDao;
 import cz.jeme.programu.stolujemeapi.error.ApiErrorType;
 import cz.jeme.programu.stolujemeapi.error.InvalidParamException;
-import cz.jeme.programu.stolujemeapi.rest.RequestUtils;
+import cz.jeme.programu.stolujemeapi.rest.ApiUtils;
+import cz.jeme.programu.stolujemeapi.rest.Request;
 import cz.jeme.programu.stolujemeapi.rest.Response;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -16,18 +20,22 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.security.spec.InvalidKeySpecException;
+import java.time.Duration;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.function.Supplier;
 
 @RestController
 public final class LoginController {
     public static final @NotNull String CREDENTIALS = "#credentials";
+    public static final @NotNull Duration SESSION_DURATION = Duration.ofDays(30);
 
     public static void throwIncorrectCredentials() {
-        throw new InvalidParamException(CREDENTIALS, ApiErrorType.INVALID_CREDENTIALS);
+        throw new InvalidParamException(LoginController.CREDENTIALS, ApiErrorType.INVALID_CREDENTIALS);
     }
 
-    public static @NotNull Supplier<InvalidParamException> supplyIncorrectCredentials() {
-        return () -> new InvalidParamException(CREDENTIALS, ApiErrorType.INVALID_CREDENTIALS);
+    public static @NotNull Supplier<@NotNull InvalidParamException> supplyIncorrectCredentials() {
+        return () -> new InvalidParamException(LoginController.CREDENTIALS, ApiErrorType.INVALID_CREDENTIALS);
     }
 
     private LoginController() {
@@ -36,33 +44,41 @@ public final class LoginController {
     @PostMapping("/login")
     @ResponseBody
     public @NotNull Response login(final @NotNull @RequestBody LoginRequest request) {
-        String email = RequestUtils.require(
+        final String email = ApiUtils.require(
                 request.email(),
                 "email"
         );
 
-        String password = RequestUtils.require(
+        final String password = ApiUtils.require(
                 request.password(),
                 "password"
         );
 
-        User user = Stolujeme.getDatabase().getUserDao().getByEmail(email)
-                .orElseThrow(supplyIncorrectCredentials());
+        final User user = UserDao.dao().byEmail(email)
+                .orElseThrow(LoginController.supplyIncorrectCredentials());
 
         try {
             if (!CryptoUtils.validate(password, user.passwordHash(), user.passwordSalt()))
-                throwIncorrectCredentials();
-        } catch (InvalidKeySpecException e) {
+                LoginController.throwIncorrectCredentials();
+        } catch (final InvalidKeySpecException e) {
             throw new RuntimeException("Could not validate password!", e);
         }
 
-        String token = CryptoUtils.genToken();
+        final String token = CryptoUtils.genToken();
 
+        final Session session = SessionDao.dao().insert(SessionSkeleton.builder()
+                .userId(user.id())
+                .duration(LoginController.SESSION_DURATION)
+                .token(token)
+                .build()
+        );
 
         return new LoginResponse(
                 email,
                 user.name(),
-                token
+                token,
+                ZonedDateTime.of(session.creation(), ZoneId.systemDefault()),
+                ZonedDateTime.of(session.expiration(), ZoneId.systemDefault())
         );
     }
 
@@ -72,7 +88,7 @@ public final class LoginController {
 
             @JsonProperty("password")
             @Nullable String password
-    ) {
+    ) implements Request {
     }
 
     public record LoginResponse(
@@ -83,10 +99,16 @@ public final class LoginController {
             @NotNull String name,
 
             @JsonProperty("token")
-            @NotNull String token
+            @NotNull String token,
+
+            @JsonProperty("creation")
+            @NotNull ZonedDateTime creation,
+
+            @JsonProperty("expiration")
+            @NotNull ZonedDateTime expiration
     ) implements Response {
         @Override
-        public @NotNull String getSectionName() {
+        public @NotNull String sectionName() {
             return "login";
         }
     }

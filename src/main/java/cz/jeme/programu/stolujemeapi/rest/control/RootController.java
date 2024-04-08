@@ -18,18 +18,20 @@ public final class RootController {
     @GetMapping("/")
     @ResponseBody
     public @NotNull Response root() {
-        return new RootResponse();
+        return RootResponse.INSTANCE;
     }
 
-    public static final class RootResponse implements Response {
+    public enum RootResponse implements Response {
+        INSTANCE;
+
         @JsonProperty("status")
         private final @NotNull String status = "ok";
 
         @JsonProperty("#")
-        private final @NotNull List<String> logo = Stolujeme.getLogo();
+        private final @NotNull List<String> logo = Stolujeme.logo();
 
         @Override
-        public @NotNull String getSectionName() {
+        public @NotNull String sectionName() {
             return "stolujeme";
         }
     }

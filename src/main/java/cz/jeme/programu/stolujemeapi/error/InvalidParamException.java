@@ -11,7 +11,7 @@ public class InvalidParamException extends ApiException {
         super(
                 HttpStatus.UNPROCESSABLE_ENTITY,
                 code,
-                INVALID_PARAM_MESSAGE.formatted(paramName, code.getMessage())
+                InvalidParamException.INVALID_PARAM_MESSAGE.formatted(paramName, code.getMessage())
         );
         this.paramName = paramName;
     }

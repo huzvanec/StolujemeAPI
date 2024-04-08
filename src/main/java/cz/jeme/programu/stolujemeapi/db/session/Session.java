@@ -1,22 +1,45 @@
 package cz.jeme.programu.stolujemeapi.db.session;
 
 import cz.jeme.programu.stolujemeapi.db.Entry;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Range;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 
 public interface Session extends Entry {
-    @Range(from = 1, to = 16_777_215) int userId();
+    @ApiStatus.Internal
+    static @NotNull Builder builder() {
+        return new SessionImpl.BuilderImpl();
+    }
 
-    @NotNull LocalDateTime creation();
+    int userId();
 
-    @NotNull LocalDateTime expiration();
+    @NotNull
+    LocalDateTime creation();
 
-    @NotNull String token();
+    @NotNull
+    LocalDateTime expiration();
 
-    @NotNull Duration duration();
+    @NotNull
+    String token();
+
+    @NotNull
+    Duration duration();
 
     boolean expired();
+
+    interface Builder extends Entry.Builder<Builder, Session> {
+        @NotNull
+        Builder userId(final int userId);
+
+        @NotNull
+        Builder creation(final @NotNull LocalDateTime creation);
+
+        @NotNull
+        Builder expiration(final @NotNull LocalDateTime expiration);
+
+        @NotNull
+        Builder token(final @NotNull String token);
+    }
 }

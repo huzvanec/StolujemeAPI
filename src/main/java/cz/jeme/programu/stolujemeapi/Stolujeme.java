@@ -1,7 +1,9 @@
 package cz.jeme.programu.stolujemeapi;
 
 import cz.jeme.programu.stolujemeapi.db.Database;
-import cz.jeme.programu.stolujemeapi.db.StoluDatabase;
+import cz.jeme.programu.stolujemeapi.db.session.SessionDao;
+import cz.jeme.programu.stolujemeapi.db.user.UserDao;
+import cz.jeme.programu.stolujemeapi.db.verification.VerificationDao;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,10 +29,15 @@ public class Stolujeme {
 
 
     public static void main(final String @NotNull [] args) {
-        parseArgs(args);
+        Stolujeme.parseArgs(args);
         SpringApplication.run(Stolujeme.class, args);
-        LOGO.forEach(LOGGER::info);
-        StoluDatabase.getInstance(); // initialize database
+        Stolujeme.LOGO.forEach(Stolujeme.LOGGER::info);
+
+        // initialize database
+        final Object ignored = Database.db();
+        UserDao.dao().init();
+        VerificationDao.dao().init();
+        SessionDao.dao().init();
     }
 
     private static void parseArgs(final String @NotNull [] arguments) {
@@ -41,25 +48,21 @@ public class Stolujeme {
             if (!key.startsWith("-"))
                 throw new IllegalArgumentException("Argument keys must start with a dash!");
             key = key.substring(1);
-            String value = arguments[arg + 1];
-            args.put(key, value);
+            final String value = arguments[arg + 1];
+            Stolujeme.args.put(key, value);
         }
-        args = Collections.unmodifiableMap(args);
+        Stolujeme.args = Collections.unmodifiableMap(Stolujeme.args);
     }
 
-    public static @NotNull List<String> getLogo() {
-        return LOGO;
+    public static @NotNull List<String> logo() {
+        return Stolujeme.LOGO;
     }
 
-    public static @NotNull Logger getLogger() {
-        return LOGGER;
+    public static @NotNull Logger logger() {
+        return Stolujeme.LOGGER;
     }
 
-    public static @NotNull Map<String, String> getArgs() {
-        return args;
-    }
-
-    public static @NotNull Database getDatabase() {
-        return StoluDatabase.getInstance();
+    public static @NotNull Map<String, String> args() {
+        return Stolujeme.args;
     }
 }

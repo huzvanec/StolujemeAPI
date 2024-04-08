@@ -6,7 +6,12 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Optional;
 
 public interface VerificationDao extends Dao<Verification, VerificationSkeleton> {
-    @NotNull Optional<Verification> getByCode(final @NotNull String code);
+    static @NotNull VerificationDao dao() {
+        return VerificationDaoImpl.INSTANCE;
+    }
+
+    @NotNull
+    Optional<Verification> byCode(final @NotNull String code);
 
     boolean existsCode(final @NotNull String code);
 

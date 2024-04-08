@@ -1,8 +1,15 @@
 package cz.jeme.programu.stolujemeapi.db;
 
-import org.jetbrains.annotations.Range;
+import org.jetbrains.annotations.NotNull;
 
 public interface Entry {
-    @Range(from = 1, to = 16_777_215) int id();
-}
+    int id();
 
+    interface Builder<B extends Builder<B, T>, T extends Entry> {
+        @NotNull
+        T build();
+
+        @NotNull
+        B id(final int id);
+    }
+}

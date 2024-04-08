@@ -14,27 +14,34 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.function.Function;
 
-public final class RequestUtils {
-    private RequestUtils() {
+public final class ApiUtils {
+    private static final @NotNull Response EMPTY_RESPONSE = new Response() {
+        @Override
+        public @Nullable String sectionName() {
+            return null;
+        }
+    };
+
+    private ApiUtils() {
         throw new AssertionError();
     }
 
 
     public static <T> @NotNull T require(final @Nullable T param, final @NotNull String name) {
-        if (param == null) throw new MissingParamException(name);
+        if (param == null) throw new MissingParamException(name); // api
         return param;
     }
 
     public static <T> @NotNull T validate(final @Nullable T param,
                                           final @NotNull String name,
                                           final @NotNull Function<@NotNull T, @NotNull ApiErrorType> validation) {
-        require(param, name);
-        ApiErrorType type = validation.apply(param);
+        ApiUtils.require(param, name);
+        final ApiErrorType type = validation.apply(param);
         if (type == ApiErrorType.OK) return param;
         if (type == ApiErrorType.MISSING_PARAMETER)
             throw new IllegalArgumentException("Validation returned %s when parameter not missing!"
                     .formatted(ApiErrorType.MISSING_PARAMETER.name()));
-        throw new InvalidParamException(
+        throw new InvalidParamException( // api
                 name,
                 type
         );
@@ -43,12 +50,12 @@ public final class RequestUtils {
     // TODO
     @NotNull
     public static String authorize() {
-        RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
+        final RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
         if (attributes == null)
             throw new RuntimeException("No request attributes are bound to this thread!");
 
-        HttpServletRequest servletRequest = ((ServletRequestAttributes) attributes).getRequest();
-        String token = servletRequest.getHeader("Authorization");
+        final HttpServletRequest servletRequest = ((ServletRequestAttributes) attributes).getRequest();
+        final String token = servletRequest.getHeader("Authorization");
         if (token == null)
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED,
@@ -60,5 +67,9 @@ public final class RequestUtils {
                     "Invalid bearer token prefix! Please use 'Bearer '!"
             );
         return token.substring(7);
+    }
+
+    public static @NotNull Response emptyResponse() {
+        return ApiUtils.EMPTY_RESPONSE;
     }
 }

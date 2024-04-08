@@ -6,7 +6,12 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Optional;
 
 public interface SessionDao extends Dao<Session, SessionSkeleton> {
-    @NotNull Optional<Session> getByToken(final @NotNull String token);
+    static @NotNull SessionDao dao() {
+        return SessionDaoImpl.INSTANCE;
+    }
+
+    @NotNull
+    Optional<Session> byToken(final @NotNull String token);
 
     boolean existsToken(final @NotNull String token);
 }
