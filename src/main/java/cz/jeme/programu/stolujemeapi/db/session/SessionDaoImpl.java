@@ -78,7 +78,7 @@ enum SessionDaoImpl implements SessionDao {
                     .executeQuery();
             if (!result.next()) return Optional.empty();
             return Optional.of(Session.builder()
-                    .userId(result.getInt(1))
+                    .id(result.getInt(1))
                     .userId(result.getInt(2))
                     .creation(result.getTimestamp(3).toLocalDateTime())
                     .expiration(result.getTimestamp(4).toLocalDateTime())

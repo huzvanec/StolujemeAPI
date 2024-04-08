@@ -13,7 +13,7 @@ import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Objects;
 
@@ -50,13 +50,13 @@ public final class ResponseBodyEditor implements ResponseBodyAdvice<Object> {
         protected final @NotNull String endpoint;
 
         @JsonProperty("timestamp")
-        protected final @NotNull ZonedDateTime timestamp;
+        protected final @NotNull LocalDateTime timestamp;
 
         public EmptyWrapper(final @NotNull Response response,
                             final @NotNull String endpoint) {
             this.endpoint = endpoint;
             success = !(response instanceof ApiErrorResponse);
-            timestamp = ZonedDateTime.now();
+            timestamp = LocalDateTime.now();
         }
     }
 

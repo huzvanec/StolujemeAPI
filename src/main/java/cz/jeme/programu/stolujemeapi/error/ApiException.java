@@ -8,8 +8,18 @@ public class ApiException extends ResponseStatusException {
     private final @NotNull ApiErrorType type;
     private final @NotNull String message;
 
-    public ApiException(final @NotNull HttpStatus status, final @NotNull ApiErrorType type) {
+    public ApiException(final @NotNull HttpStatus status,
+                        final @NotNull ApiErrorType type) {
         this(status, type, type.getMessage());
+    }
+
+    public ApiException(final @NotNull HttpStatus status) {
+        this(status, ApiErrorType.UNKNOWN);
+    }
+
+    public ApiException(final @NotNull HttpStatus status,
+                        final @NotNull String message) {
+        this(status, ApiErrorType.UNKNOWN, message);
     }
 
     public ApiException(final @NotNull HttpStatus status,

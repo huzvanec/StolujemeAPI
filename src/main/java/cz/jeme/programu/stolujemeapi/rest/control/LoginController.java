@@ -21,8 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.security.spec.InvalidKeySpecException;
 import java.time.Duration;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.function.Supplier;
 
 @RestController
@@ -77,8 +76,8 @@ public final class LoginController {
                 email,
                 user.name(),
                 token,
-                ZonedDateTime.of(session.creation(), ZoneId.systemDefault()),
-                ZonedDateTime.of(session.expiration(), ZoneId.systemDefault())
+                session.creation(),
+                session.expiration()
         );
     }
 
@@ -102,10 +101,10 @@ public final class LoginController {
             @NotNull String token,
 
             @JsonProperty("creation")
-            @NotNull ZonedDateTime creation,
+            @NotNull LocalDateTime creation,
 
             @JsonProperty("expiration")
-            @NotNull ZonedDateTime expiration
+            @NotNull LocalDateTime expiration
     ) implements Response {
         @Override
         public @NotNull String sectionName() {

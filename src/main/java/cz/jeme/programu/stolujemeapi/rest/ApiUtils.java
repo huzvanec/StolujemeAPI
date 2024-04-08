@@ -1,6 +1,10 @@
 package cz.jeme.programu.stolujemeapi.rest;
 
+import cz.jeme.programu.stolujemeapi.db.CryptoUtils;
+import cz.jeme.programu.stolujemeapi.db.session.Session;
+import cz.jeme.programu.stolujemeapi.db.session.SessionDao;
 import cz.jeme.programu.stolujemeapi.error.ApiErrorType;
+import cz.jeme.programu.stolujemeapi.error.ApiException;
 import cz.jeme.programu.stolujemeapi.error.InvalidParamException;
 import cz.jeme.programu.stolujemeapi.error.MissingParamException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,7 +14,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.function.Function;
 
@@ -21,6 +24,8 @@ public final class ApiUtils {
             return null;
         }
     };
+
+    private static final @NotNull ApiException INVALID_AUTH = new ApiException(HttpStatus.UNAUTHORIZED, "Invalid authorization!");
 
     private ApiUtils() {
         throw new AssertionError();
@@ -47,26 +52,27 @@ public final class ApiUtils {
         );
     }
 
-    // TODO
-    @NotNull
-    public static String authorize() {
+    public static @NotNull Session authorize() {
         final RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
         if (attributes == null)
             throw new RuntimeException("No request attributes are bound to this thread!");
 
         final HttpServletRequest servletRequest = ((ServletRequestAttributes) attributes).getRequest();
-        final String token = servletRequest.getHeader("Authorization");
+        String token = servletRequest.getHeader("Authorization");
         if (token == null)
-            throw new ResponseStatusException(
+            throw new ApiException(
                     HttpStatus.UNAUTHORIZED,
                     "Missing authorization (bearer token)!"
             );
         if (!token.startsWith("Bearer "))
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "Invalid bearer token prefix! Please use 'Bearer '!"
-            );
-        return token.substring(7);
+            throw ApiUtils.INVALID_AUTH;
+        token = token.substring(7);
+        if (token.length() != CryptoUtils.TOKEN_LENGTH_BASE64)
+            throw ApiUtils.INVALID_AUTH;
+        final Session session = SessionDao.dao().byToken(token)
+                .orElseThrow(() -> ApiUtils.INVALID_AUTH);
+        if (session.expired()) throw ApiUtils.INVALID_AUTH;
+        return session;
     }
 
     public static @NotNull Response emptyResponse() {

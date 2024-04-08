@@ -9,8 +9,8 @@ import cz.jeme.programu.stolujemeapi.db.verification.VerificationDao;
 import cz.jeme.programu.stolujemeapi.db.verification.VerificationSkeleton;
 import cz.jeme.programu.stolujemeapi.error.ApiErrorType;
 import cz.jeme.programu.stolujemeapi.error.ApiException;
-import cz.jeme.programu.stolujemeapi.rest.Request;
 import cz.jeme.programu.stolujemeapi.rest.ApiUtils;
+import cz.jeme.programu.stolujemeapi.rest.Request;
 import cz.jeme.programu.stolujemeapi.rest.Response;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -22,8 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.security.spec.InvalidKeySpecException;
 import java.time.Duration;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 
 @RestController
 public final class VerificationController {
@@ -72,8 +71,8 @@ public final class VerificationController {
         return new VerificationResponse(
                 email,
                 user.name(),
-                ZonedDateTime.of(verification.creation(), ZoneId.systemDefault()),
-                ZonedDateTime.of(verification.expiration(), ZoneId.systemDefault())
+                verification.creation(),
+                verification.expiration()
         );
     }
 
@@ -94,11 +93,11 @@ public final class VerificationController {
             @NotNull String name,
 
             @JsonProperty("creation")
-            @NotNull ZonedDateTime creation,
+            @NotNull LocalDateTime creation,
 
 
             @JsonProperty("expiration")
-            @NotNull ZonedDateTime expiration
+            @NotNull LocalDateTime expiration
     ) implements Response {
         @Override
         public @NotNull String sectionName() {
