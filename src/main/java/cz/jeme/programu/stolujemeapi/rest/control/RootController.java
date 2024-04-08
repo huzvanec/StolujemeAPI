@@ -18,12 +18,10 @@ public final class RootController {
     @GetMapping("/")
     @ResponseBody
     public @NotNull Response root() {
-        return RootResponse.INSTANCE;
+        return new RootResponse();
     }
 
-    public enum RootResponse implements Response {
-        INSTANCE;
-
+    public static final class RootResponse implements Response {
         @JsonProperty("status")
         private final @NotNull String status = "ok";
 
