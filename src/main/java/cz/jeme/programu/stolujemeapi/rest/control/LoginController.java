@@ -53,7 +53,7 @@ public final class LoginController {
                 "password"
         );
 
-        final User user = UserDao.dao().byEmail(email)
+        final User user = UserDao.INSTANCE.byEmail(email)
                 .orElseThrow(LoginController.supplyIncorrectCredentials());
 
         try {
@@ -65,11 +65,12 @@ public final class LoginController {
 
         final String token = CryptoUtils.genToken();
 
-        final Session session = SessionDao.dao().insert(SessionSkeleton.builder()
-                .userId(user.id())
-                .duration(LoginController.SESSION_DURATION)
-                .token(token)
-                .build()
+        final Session session = SessionDao.INSTANCE.insert(
+                new SessionSkeleton.Builder()
+                        .userId(user.id())
+                        .duration(LoginController.SESSION_DURATION)
+                        .token(token)
+                        .build()
         );
 
         return new LoginResponse(

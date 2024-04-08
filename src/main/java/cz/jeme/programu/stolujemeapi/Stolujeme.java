@@ -34,10 +34,10 @@ public class Stolujeme {
         Stolujeme.LOGO.forEach(Stolujeme.LOGGER::info);
 
         // initialize database
-        final Object ignored = Database.db();
-        UserDao.dao().init();
-        VerificationDao.dao().init();
-        SessionDao.dao().init();
+        final Object ignored = Database.INSTANCE;
+        UserDao.INSTANCE.init();
+        VerificationDao.INSTANCE.init();
+        SessionDao.INSTANCE.init();
     }
 
     private static void parseArgs(final String @NotNull [] arguments) {

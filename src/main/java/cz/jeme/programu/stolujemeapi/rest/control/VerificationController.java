@@ -45,7 +45,7 @@ public final class VerificationController {
                 "email"
         );
 
-        final User user = UserDao.dao().byEmail(email)
+        final User user = UserDao.INSTANCE.byEmail(email)
                 .orElseThrow(LoginController.supplyIncorrectCredentials());
 
 
@@ -61,11 +61,12 @@ public final class VerificationController {
 
         final String code = CryptoUtils.genVerification();
 
-        final Verification verification = VerificationDao.dao().insert(VerificationSkeleton.builder()
-                .userId(user.id())
-                .duration(VerificationController.VERIFICATION_DURATION)
-                .code(code)
-                .build()
+        final Verification verification = VerificationDao.INSTANCE.insert(
+                new VerificationSkeleton.Builder()
+                        .userId(user.id())
+                        .duration(VerificationController.VERIFICATION_DURATION)
+                        .code(code)
+                        .build()
         );
 
         return new VerificationResponse(

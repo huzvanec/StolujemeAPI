@@ -2,30 +2,57 @@ package cz.jeme.programu.stolujemeapi.db.verification;
 
 import cz.jeme.programu.stolujemeapi.db.Skeleton;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.Duration;
+import java.util.Objects;
 
-public interface VerificationSkeleton extends Skeleton {
-    static @NotNull Builder builder() {
-        return new VerificationSkeletonImpl.BuilderImpl();
+public final class VerificationSkeleton implements Skeleton {
+    private final int userId;
+    private final @NotNull Duration duration;
+    private final @NotNull String code;
+
+    private VerificationSkeleton(final @NotNull Builder builder) {
+        userId = Objects.requireNonNull(builder.userId, "userId");
+        duration = Objects.requireNonNull(builder.duration, "duration");
+        code = Objects.requireNonNull(builder.code, "code");
     }
 
-    int userId();
+    public int userId() {
+        return userId;
+    }
 
-    @NotNull
-    Duration duration();
+    public @NotNull Duration duration() {
+        return duration;
+    }
 
-    @NotNull
-    String code();
+    public @NotNull String code() {
+        return code;
+    }
 
-    interface Builder extends Skeleton.Builder<Builder, VerificationSkeleton> {
-        @NotNull
-        Builder userId(final int userId);
+    public static final class Builder implements Skeleton.Builder<Builder, VerificationSkeleton> {
+        private @Nullable Integer userId;
+        private @Nullable Duration duration;
+        private @Nullable String code;
 
-        @NotNull
-        Builder duration(final @NotNull Duration duration);
+        public @NotNull Builder userId(final int userId) {
+            this.userId = userId;
+            return this;
+        }
 
-        @NotNull
-        Builder code(final @NotNull String code);
+        public @NotNull Builder duration(final @NotNull Duration duration) {
+            this.duration = duration;
+            return this;
+        }
+
+        public @NotNull Builder code(final @NotNull String code) {
+            this.code = code;
+            return this;
+        }
+
+        @Override
+        public @NotNull VerificationSkeleton build() {
+            return new VerificationSkeleton(this);
+        }
     }
 }

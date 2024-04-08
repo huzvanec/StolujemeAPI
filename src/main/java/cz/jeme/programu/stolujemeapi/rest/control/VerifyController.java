@@ -26,13 +26,13 @@ public final class VerifyController {
         final String code = ApiUtils.require(request.code(), "code");
 
 
-        final Verification verification = VerificationDao.dao().byCode(code)
+        final Verification verification = VerificationDao.INSTANCE.byCode(code)
                 .orElseThrow(() -> new InvalidParamException("code", ApiErrorType.VERIFICATION_CODE_INVALID));
 
         if (verification.expired())
             throw new InvalidParamException("code", ApiErrorType.VERIFICATION_EXPIRED);
 
-        VerificationDao.dao().verify(verification);
+        VerificationDao.INSTANCE.verify(verification);
 
         return ApiUtils.emptyResponse();
     }

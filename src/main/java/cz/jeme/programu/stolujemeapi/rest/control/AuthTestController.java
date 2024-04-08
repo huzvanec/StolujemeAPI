@@ -22,7 +22,7 @@ public final class AuthTestController {
     @ResponseBody
     public @NotNull Response testAuth() {
         final Session session = ApiUtils.authenticate();
-        final User user = UserDao.dao().byId(session.userId())
+        final User user = UserDao.INSTANCE.byId(session.userId())
                 .orElseThrow(() -> new RuntimeException("Session user id does not correspond to any users!"));
         return new AuthTestResponse(
                 user.email(),

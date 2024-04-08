@@ -5,8 +5,8 @@ import cz.jeme.programu.stolujemeapi.db.CryptoUtils;
 import cz.jeme.programu.stolujemeapi.db.user.UserDao;
 import cz.jeme.programu.stolujemeapi.db.user.UserSkeleton;
 import cz.jeme.programu.stolujemeapi.error.ApiErrorType;
-import cz.jeme.programu.stolujemeapi.rest.Request;
 import cz.jeme.programu.stolujemeapi.rest.ApiUtils;
+import cz.jeme.programu.stolujemeapi.rest.Request;
 import cz.jeme.programu.stolujemeapi.rest.Response;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.jetbrains.annotations.NotNull;
@@ -57,7 +57,7 @@ public final class RegisterController {
         } catch (final InvalidKeySpecException e) {
             throw new RuntimeException("Could not hash password!", e);
         }
-        UserDao.dao().insert(UserSkeleton.builder()
+        UserDao.INSTANCE.insert(new UserSkeleton.Builder()
                 .email(email)
                 .name(name)
                 .passwordHash(hash)
@@ -75,7 +75,7 @@ public final class RegisterController {
         if (length < RegisterController.NAME_LENGTH_MIN || length > RegisterController.NAME_LENGTH_MAX)
             return ApiErrorType.NAME_LENGTH_INVALID;
         if (!name.matches(RegisterController.NAME_REGEX)) return ApiErrorType.NAME_CONTENTS_INVALID;
-        if (UserDao.dao().existsName(name)) return ApiErrorType.NAME_NOT_UNIQUE;
+        if (UserDao.INSTANCE.existsName(name)) return ApiErrorType.NAME_NOT_UNIQUE;
         return ApiErrorType.OK;
     }
 
@@ -89,7 +89,7 @@ public final class RegisterController {
     public @NotNull ApiErrorType emailValid(final @NotNull String email) {
         if (email.length() > RegisterController.EMAIL_LENGTH_MAX) return ApiErrorType.EMAIL_LENGTH_INVALID;
         if (!EmailValidator.getInstance().isValid(email)) return ApiErrorType.EMAIL_CONTENTS_INVALID;
-        if (UserDao.dao().existsEmail(email)) return ApiErrorType.EMAIL_NOT_UNIQUE;
+        if (UserDao.INSTANCE.existsEmail(email)) return ApiErrorType.EMAIL_NOT_UNIQUE;
         return ApiErrorType.OK;
     }
 

@@ -2,35 +2,68 @@ package cz.jeme.programu.stolujemeapi.db.user;
 
 import cz.jeme.programu.stolujemeapi.db.Skeleton;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-public interface UserSkeleton extends Skeleton {
-    static @NotNull Builder builder() {
-        return new UserSkeletonImpl.BuilderImpl();
+import java.util.Objects;
+
+public final class UserSkeleton implements Skeleton {
+    private final @NotNull String email;
+    private final @NotNull String name;
+    private final @NotNull String passwordHash;
+    private final @NotNull String passwordSalt;
+
+    private UserSkeleton(final @NotNull Builder builder) {
+        email = Objects.requireNonNull(builder.email, "email");
+        name = Objects.requireNonNull(builder.name, "name");
+        passwordHash = Objects.requireNonNull(builder.passwordHash, "passwordHash");
+        passwordSalt = Objects.requireNonNull(builder.passwordSalt, "passwordSalt");
     }
 
-    @NotNull
-    String email();
+    public @NotNull String email() {
+        return email;
+    }
 
-    @NotNull
-    String name();
+    public @NotNull String name() {
+        return name;
+    }
 
-    @NotNull
-    String passwordHash();
+    public @NotNull String passwordHash() {
+        return passwordHash;
+    }
 
-    @NotNull
-    String passwordSalt();
+    public @NotNull String passwordSalt() {
+        return passwordSalt;
+    }
 
-    interface Builder extends Skeleton.Builder<Builder, UserSkeleton> {
-        @NotNull
-        Builder email(final @NotNull String email);
+    public static final class Builder implements Skeleton.Builder<Builder, UserSkeleton> {
+        private @Nullable String email;
+        private @Nullable String name;
+        private @Nullable String passwordHash;
+        private @Nullable String passwordSalt;
 
-        @NotNull
-        Builder name(final @NotNull String name);
+        public @NotNull Builder email(final @NotNull String email) {
+            this.email = email;
+            return this;
+        }
 
-        @NotNull
-        Builder passwordHash(final @NotNull String passwordHash);
+        public @NotNull Builder name(final @NotNull String name) {
+            this.name = name;
+            return this;
+        }
 
-        @NotNull
-        Builder passwordSalt(final @NotNull String passwordSalt);
+        public @NotNull Builder passwordHash(final @NotNull String passwordHash) {
+            this.passwordHash = passwordHash;
+            return this;
+        }
+
+        public @NotNull Builder passwordSalt(final @NotNull String passwordSalt) {
+            this.passwordSalt = passwordSalt;
+            return this;
+        }
+
+        @Override
+        public @NotNull UserSkeleton build() {
+            return new UserSkeleton(this);
+        }
     }
 }
