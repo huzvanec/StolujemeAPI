@@ -54,6 +54,24 @@ public final class Verification implements Entry {
         return !expiration.isAfter(LocalDateTime.now()); // not using isBefore to exclude equals
     }
 
+    @Override
+    public boolean equals(final @NotNull Object o) {
+        if (this == o) return true;
+        if (!(o instanceof final Verification that)) return false;
+
+        return id == that.id && userId == that.userId && creation.equals(that.creation) && expiration.equals(that.expiration) && code.equals(that.code);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = id;
+        result = 31 * result + userId;
+        result = 31 * result + creation.hashCode();
+        result = 31 * result + expiration.hashCode();
+        result = 31 * result + code.hashCode();
+        return result;
+    }
+
     static final class Builder implements Entry.Builder<Builder, Verification> {
         private @Nullable Integer id;
         private @Nullable Integer userId;

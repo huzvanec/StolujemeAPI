@@ -30,6 +30,22 @@ public final class SessionSkeleton implements Skeleton {
         return duration;
     }
 
+    @Override
+    public boolean equals(final @NotNull Object o) {
+        if (this == o) return true;
+        if (!(o instanceof final SessionSkeleton that)) return false;
+
+        return userId == that.userId && token.equals(that.token) && duration.equals(that.duration);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = userId;
+        result = 31 * result + token.hashCode();
+        result = 31 * result + duration.hashCode();
+        return result;
+    }
+
     public static final class Builder implements Skeleton.Builder<Builder, SessionSkeleton> {
         private @Nullable Integer userId;
         private @Nullable String token;

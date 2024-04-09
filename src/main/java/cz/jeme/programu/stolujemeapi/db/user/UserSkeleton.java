@@ -35,6 +35,23 @@ public final class UserSkeleton implements Skeleton {
         return passwordSalt;
     }
 
+    @Override
+    public boolean equals(final @NotNull Object o) {
+        if (this == o) return true;
+        if (!(o instanceof final UserSkeleton that)) return false;
+
+        return email.equals(that.email) && name.equals(that.name) && passwordHash.equals(that.passwordHash) && passwordSalt.equals(that.passwordSalt);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = email.hashCode();
+        result = 31 * result + name.hashCode();
+        result = 31 * result + passwordHash.hashCode();
+        result = 31 * result + passwordSalt.hashCode();
+        return result;
+    }
+
     public static final class Builder implements Skeleton.Builder<Builder, UserSkeleton> {
         private @Nullable String email;
         private @Nullable String name;

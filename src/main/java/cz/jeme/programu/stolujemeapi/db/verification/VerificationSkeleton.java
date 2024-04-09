@@ -30,6 +30,22 @@ public final class VerificationSkeleton implements Skeleton {
         return code;
     }
 
+    @Override
+    public boolean equals(final @NotNull Object o) {
+        if (this == o) return true;
+        if (!(o instanceof final VerificationSkeleton that)) return false;
+
+        return userId == that.userId && duration.equals(that.duration) && code.equals(that.code);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = userId;
+        result = 31 * result + duration.hashCode();
+        result = 31 * result + code.hashCode();
+        return result;
+    }
+
     public static final class Builder implements Skeleton.Builder<Builder, VerificationSkeleton> {
         private @Nullable Integer userId;
         private @Nullable Duration duration;

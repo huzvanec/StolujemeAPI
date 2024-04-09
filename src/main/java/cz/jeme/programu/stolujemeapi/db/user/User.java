@@ -55,6 +55,26 @@ public final class User implements Entry {
         return id;
     }
 
+    @Override
+    public boolean equals(final @NotNull Object o) {
+        if (this == o) return true;
+        if (!(o instanceof final User user)) return false;
+
+        return id == user.id && verified == user.verified && email.equals(user.email) && name.equals(user.name) && registered.equals(user.registered) && passwordHash.equals(user.passwordHash) && passwordSalt.equals(user.passwordSalt);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = id;
+        result = 31 * result + email.hashCode();
+        result = 31 * result + name.hashCode();
+        result = 31 * result + Boolean.hashCode(verified);
+        result = 31 * result + registered.hashCode();
+        result = 31 * result + passwordHash.hashCode();
+        result = 31 * result + passwordSalt.hashCode();
+        return result;
+    }
+
     static final class Builder implements Entry.Builder<Builder, User> {
         private @Nullable Integer id;
         private @Nullable String email;
