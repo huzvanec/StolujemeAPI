@@ -36,7 +36,7 @@ public final class UserSkeleton implements Skeleton {
     }
 
     @Override
-    public boolean equals(final @NotNull Object o) {
+    public boolean equals(final @Nullable Object o) {
         if (this == o) return true;
         if (!(o instanceof final UserSkeleton that)) return false;
 

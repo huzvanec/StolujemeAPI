@@ -56,7 +56,7 @@ public final class User implements Entry {
     }
 
     @Override
-    public boolean equals(final @NotNull Object o) {
+    public boolean equals(final @Nullable Object o) {
         if (this == o) return true;
         if (!(o instanceof final User user)) return false;
 
