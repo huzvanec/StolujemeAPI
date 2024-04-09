@@ -2,6 +2,7 @@ package cz.jeme.programu.stolujemeapi.rest.control;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import cz.jeme.programu.stolujemeapi.db.CryptoUtils;
+import cz.jeme.programu.stolujemeapi.db.session.Session;
 import cz.jeme.programu.stolujemeapi.db.user.User;
 import cz.jeme.programu.stolujemeapi.db.user.UserDao;
 import cz.jeme.programu.stolujemeapi.db.verification.Verification;
@@ -9,6 +10,7 @@ import cz.jeme.programu.stolujemeapi.db.verification.VerificationDao;
 import cz.jeme.programu.stolujemeapi.db.verification.VerificationSkeleton;
 import cz.jeme.programu.stolujemeapi.error.ApiErrorType;
 import cz.jeme.programu.stolujemeapi.error.ApiException;
+import cz.jeme.programu.stolujemeapi.error.InvalidParamException;
 import cz.jeme.programu.stolujemeapi.rest.ApiUtils;
 import cz.jeme.programu.stolujemeapi.rest.Request;
 import cz.jeme.programu.stolujemeapi.rest.Response;
@@ -31,9 +33,9 @@ public final class VerificationController {
     private VerificationController() {
     }
 
-    @PostMapping("/verification")
+    @PostMapping("/send-verification")
     @ResponseBody
-    public @NotNull Response verification(final @NotNull @RequestBody VerificationRequest request) {
+    private @NotNull Response send(final @NotNull @RequestBody SendRequest request) {
         final String password = ApiUtils.require(
                 request.password(),
                 "password"
@@ -45,7 +47,7 @@ public final class VerificationController {
                 "email"
         );
 
-        final User user = UserDao.INSTANCE.byEmail(email)
+        final User user = UserDao.INSTANCE.userByEmail(email)
                 .orElseThrow(LoginController.supplyIncorrectCredentials());
 
 
@@ -61,7 +63,7 @@ public final class VerificationController {
 
         final String code = CryptoUtils.genVerification();
 
-        final Verification verification = VerificationDao.INSTANCE.insert(
+        final Verification verification = VerificationDao.INSTANCE.insertVerification(
                 new VerificationSkeleton.Builder()
                         .userId(user.id())
                         .duration(VerificationController.VERIFICATION_DURATION)
@@ -69,7 +71,7 @@ public final class VerificationController {
                         .build()
         );
 
-        return new VerificationResponse(
+        return new SendResponse(
                 email,
                 user.name(),
                 verification.creation(),
@@ -77,7 +79,7 @@ public final class VerificationController {
         );
     }
 
-    public record VerificationRequest(
+    public record SendRequest(
             @JsonProperty("email")
             @Nullable String email,
 
@@ -86,23 +88,72 @@ public final class VerificationController {
     ) implements Request {
     }
 
-    public record VerificationResponse(
+    public record SendResponse(
             @JsonProperty("email")
             @NotNull String email,
-
             @JsonProperty("name")
             @NotNull String name,
-
             @JsonProperty("creation")
             @NotNull LocalDateTime creation,
-
-
             @JsonProperty("expiration")
             @NotNull LocalDateTime expiration
     ) implements Response {
         @Override
         public @NotNull String sectionName() {
             return "verification";
+        }
+    }
+
+    @PostMapping("/verify")
+    @ResponseBody
+    private @NotNull Response verify(final @NotNull @RequestBody VerifyRequest request) {
+        final String code = ApiUtils.require(request.code(), "code");
+
+
+        final Verification verification = VerificationDao.INSTANCE.verificationByCode(code)
+                .orElseThrow(() -> new InvalidParamException("code", ApiErrorType.VERIFICATION_CODE_INVALID));
+
+        if (verification.expired())
+            throw new InvalidParamException("code", ApiErrorType.VERIFICATION_EXPIRED);
+
+        VerificationDao.INSTANCE.verify(verification);
+
+        return ApiUtils.emptyResponse();
+    }
+
+    public record VerifyRequest(
+            @JsonProperty("code")
+            @Nullable String code
+    ) implements Request {
+    }
+
+    @PostMapping("/auth")
+    @ResponseBody
+    private @NotNull Response testAuth() {
+        final Session session = ApiUtils.authenticate();
+        final User user = UserDao.INSTANCE.userById(session.userId())
+                .orElseThrow(() -> new RuntimeException("Session user id does not correspond to any users!"));
+        return new AuthTestResponse(
+                user.email(),
+                user.name(),
+                session.creation(),
+                session.expiration()
+        );
+    }
+
+    public record AuthTestResponse(
+            @JsonProperty("email")
+            @NotNull String email,
+            @JsonProperty("name")
+            @NotNull String name,
+            @JsonProperty("creation")
+            @NotNull LocalDateTime creation,
+            @JsonProperty("expiration")
+            @NotNull LocalDateTime expiration
+    ) implements Response {
+        @Override
+        public @NotNull String sectionName() {
+            return "session";
         }
     }
 }

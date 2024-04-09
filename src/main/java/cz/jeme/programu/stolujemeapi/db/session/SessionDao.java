@@ -10,7 +10,7 @@ import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-public enum SessionDao implements Dao<Session, SessionSkeleton> {
+public enum SessionDao implements Dao {
     INSTANCE;
 
     private final @NotNull StatementWrapper wrapper = StatementWrapper.wrapper();
@@ -38,8 +38,7 @@ public enum SessionDao implements Dao<Session, SessionSkeleton> {
         }
     }
 
-    @Override
-    public @NotNull Optional<Session> byId(final int id) {
+    public @NotNull Optional<Session> sessionById(final int id) {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
@@ -64,7 +63,7 @@ public enum SessionDao implements Dao<Session, SessionSkeleton> {
     }
 
 
-    public @NotNull Optional<Session> byToken(final @NotNull String token) {
+    public @NotNull Optional<Session> sessionByToken(final @NotNull String token) {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
@@ -88,8 +87,7 @@ public enum SessionDao implements Dao<Session, SessionSkeleton> {
         }
     }
 
-    @Override
-    public boolean existsId(final int id) {
+    public boolean existsSessionId(final int id) {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
@@ -106,7 +104,7 @@ public enum SessionDao implements Dao<Session, SessionSkeleton> {
     }
 
 
-    public boolean existsToken(final @NotNull String token) {
+    public boolean existsSessionToken(final @NotNull String token) {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
@@ -122,8 +120,7 @@ public enum SessionDao implements Dao<Session, SessionSkeleton> {
         }
     }
 
-    @Override
-    public @NotNull Session insert(final @NotNull SessionSkeleton skeleton) {
+    public @NotNull Session insertSession(final @NotNull SessionSkeleton skeleton) {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """

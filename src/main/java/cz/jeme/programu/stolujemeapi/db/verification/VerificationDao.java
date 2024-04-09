@@ -10,7 +10,7 @@ import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-public enum VerificationDao implements Dao<Verification, VerificationSkeleton> {
+public enum VerificationDao implements Dao {
     INSTANCE;
 
     private final @NotNull StatementWrapper wrapper = StatementWrapper.wrapper();
@@ -38,8 +38,7 @@ public enum VerificationDao implements Dao<Verification, VerificationSkeleton> {
         }
     }
 
-    @Override
-    public @NotNull Optional<Verification> byId(final int id) {
+    public @NotNull Optional<Verification> verificationById(final int id) {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
@@ -65,7 +64,7 @@ public enum VerificationDao implements Dao<Verification, VerificationSkeleton> {
     }
 
 
-    public @NotNull Optional<Verification> byCode(final @NotNull String code) {
+    public @NotNull Optional<Verification> verificationByCode(final @NotNull String code) {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
@@ -91,8 +90,7 @@ public enum VerificationDao implements Dao<Verification, VerificationSkeleton> {
         }
     }
 
-    @Override
-    public boolean existsId(final int id) {
+    public boolean existsVerificationId(final int id) {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
@@ -109,7 +107,7 @@ public enum VerificationDao implements Dao<Verification, VerificationSkeleton> {
     }
 
 
-    public boolean existsCode(final @NotNull String code) {
+    public boolean existsVerificationCode(final @NotNull String code) {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
@@ -125,8 +123,7 @@ public enum VerificationDao implements Dao<Verification, VerificationSkeleton> {
         }
     }
 
-    @Override
-    public @NotNull Verification insert(final @NotNull VerificationSkeleton skeleton) {
+    public @NotNull Verification insertVerification(final @NotNull VerificationSkeleton skeleton) {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """

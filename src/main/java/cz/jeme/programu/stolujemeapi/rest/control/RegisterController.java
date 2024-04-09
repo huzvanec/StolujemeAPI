@@ -33,7 +33,7 @@ public final class RegisterController {
 
     @PostMapping("/register")
     @ResponseBody
-    public @NotNull Response register(final @NotNull @RequestBody RegisterRequest request) {
+    private @NotNull Response register(final @NotNull @RequestBody RegisterRequest request) {
         final String name = ApiUtils.validate(
                 request.name(),
                 "name",
@@ -57,7 +57,7 @@ public final class RegisterController {
         } catch (final InvalidKeySpecException e) {
             throw new RuntimeException("Could not hash password!", e);
         }
-        UserDao.INSTANCE.insert(new UserSkeleton.Builder()
+        UserDao.INSTANCE.insertUser(new UserSkeleton.Builder()
                 .email(email)
                 .name(name)
                 .passwordHash(hash)
@@ -75,7 +75,7 @@ public final class RegisterController {
         if (length < RegisterController.NAME_LENGTH_MIN || length > RegisterController.NAME_LENGTH_MAX)
             return ApiErrorType.NAME_LENGTH_INVALID;
         if (!name.matches(RegisterController.NAME_REGEX)) return ApiErrorType.NAME_CONTENTS_INVALID;
-        if (UserDao.INSTANCE.existsName(name)) return ApiErrorType.NAME_NOT_UNIQUE;
+        if (UserDao.INSTANCE.existsUserName(name)) return ApiErrorType.NAME_NOT_UNIQUE;
         return ApiErrorType.OK;
     }
 
@@ -89,7 +89,7 @@ public final class RegisterController {
     public @NotNull ApiErrorType emailValid(final @NotNull String email) {
         if (email.length() > RegisterController.EMAIL_LENGTH_MAX) return ApiErrorType.EMAIL_LENGTH_INVALID;
         if (!EmailValidator.getInstance().isValid(email)) return ApiErrorType.EMAIL_CONTENTS_INVALID;
-        if (UserDao.INSTANCE.existsEmail(email)) return ApiErrorType.EMAIL_NOT_UNIQUE;
+        if (UserDao.INSTANCE.existsUserEmail(email)) return ApiErrorType.EMAIL_NOT_UNIQUE;
         return ApiErrorType.OK;
     }
 

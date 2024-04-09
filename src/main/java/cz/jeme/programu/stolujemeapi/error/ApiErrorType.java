@@ -30,9 +30,11 @@ public enum ApiErrorType {
 
     EMAIL_NOT_UNIQUE("an account with this email already exists"),
     INVALID_CREDENTIALS("the name, email or password you provided is incorrect"),
-    USER_ALREADY_VERIFIED("This user is already verified"),
+    USER_ALREADY_VERIFIED("this user is already verified"),
     VERIFICATION_CODE_INVALID("the provided code does not match any existing verification code"),
-    VERIFICATION_EXPIRED("this verification has already expired or the user was already verified");
+    VERIFICATION_EXPIRED("this verification has already expired or the user was already verified"),
+    UUID_CONTENTS_INVALID("this uuid is invalid"),
+    MEAL_UUID_INVALID("this meal does not exist");
 
     private final @Nullable String message;
 

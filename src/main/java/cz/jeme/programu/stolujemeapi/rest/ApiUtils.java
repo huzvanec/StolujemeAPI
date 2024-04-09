@@ -69,7 +69,7 @@ public final class ApiUtils {
         token = token.substring(7);
         if (token.length() != CryptoUtils.TOKEN_LENGTH_BASE64)
             throw ApiUtils.INVALID_AUTH;
-        final Session session = SessionDao.INSTANCE.byToken(token)
+        final Session session = SessionDao.INSTANCE.sessionByToken(token)
                 .orElseThrow(() -> ApiUtils.INVALID_AUTH);
         if (session.expired()) throw ApiUtils.INVALID_AUTH;
         return session;

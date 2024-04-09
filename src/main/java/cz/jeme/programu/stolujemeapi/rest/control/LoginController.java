@@ -42,7 +42,7 @@ public final class LoginController {
 
     @PostMapping("/login")
     @ResponseBody
-    public @NotNull Response login(final @NotNull @RequestBody LoginRequest request) {
+    private @NotNull Response login(final @NotNull @RequestBody LoginRequest request) {
         final String email = ApiUtils.require(
                 request.email(),
                 "email"
@@ -53,7 +53,7 @@ public final class LoginController {
                 "password"
         );
 
-        final User user = UserDao.INSTANCE.byEmail(email)
+        final User user = UserDao.INSTANCE.userByEmail(email)
                 .orElseThrow(LoginController.supplyIncorrectCredentials());
 
         try {
@@ -65,7 +65,7 @@ public final class LoginController {
 
         final String token = CryptoUtils.genToken();
 
-        final Session session = SessionDao.INSTANCE.insert(
+        final Session session = SessionDao.INSTANCE.insertSession(
                 new SessionSkeleton.Builder()
                         .userId(user.id())
                         .duration(LoginController.SESSION_DURATION)

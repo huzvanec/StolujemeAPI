@@ -11,7 +11,7 @@ import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-public enum UserDao implements Dao<User, UserSkeleton> {
+public enum UserDao implements Dao {
     INSTANCE;
 
     private final @NotNull StatementWrapper wrapper = StatementWrapper.wrapper();
@@ -44,8 +44,7 @@ public enum UserDao implements Dao<User, UserSkeleton> {
         }
     }
 
-    @Override
-    public @NotNull Optional<User> byId(final int id) {
+    public @NotNull Optional<User> userById(final int id) {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
@@ -73,7 +72,7 @@ public enum UserDao implements Dao<User, UserSkeleton> {
         }
     }
 
-    public @NotNull Optional<User> byEmail(final @NotNull String email) {
+    public @NotNull Optional<User> userByEmail(final @NotNull String email) {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
@@ -100,7 +99,7 @@ public enum UserDao implements Dao<User, UserSkeleton> {
         }
     }
 
-    public @NotNull Optional<User> byName(final @NotNull String name) {
+    public @NotNull Optional<User> userByName(final @NotNull String name) {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
@@ -128,8 +127,7 @@ public enum UserDao implements Dao<User, UserSkeleton> {
     }
 
 
-    @Override
-    public boolean existsId(final int id) {
+    public boolean existsUserId(final int id) {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
@@ -145,7 +143,7 @@ public enum UserDao implements Dao<User, UserSkeleton> {
         }
     }
 
-    public boolean existsEmail(final @NotNull String email) {
+    public boolean existsUserEmail(final @NotNull String email) {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
@@ -161,7 +159,7 @@ public enum UserDao implements Dao<User, UserSkeleton> {
         }
     }
 
-    public boolean existsName(final @NotNull String name) {
+    public boolean existsUserName(final @NotNull String name) {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
@@ -178,8 +176,7 @@ public enum UserDao implements Dao<User, UserSkeleton> {
     }
 
 
-    @Override
-    public @NotNull User insert(final @NotNull UserSkeleton skeleton) {
+    public @NotNull User insertUser(final @NotNull UserSkeleton skeleton) {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """

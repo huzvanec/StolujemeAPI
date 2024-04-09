@@ -1,6 +1,7 @@
 package cz.jeme.programu.stolujemeapi;
 
 import cz.jeme.programu.stolujemeapi.db.Database;
+import cz.jeme.programu.stolujemeapi.db.meal.MealDao;
 import cz.jeme.programu.stolujemeapi.db.session.SessionDao;
 import cz.jeme.programu.stolujemeapi.db.user.UserDao;
 import cz.jeme.programu.stolujemeapi.db.verification.VerificationDao;
@@ -38,6 +39,7 @@ public class Stolujeme {
         UserDao.INSTANCE.init();
         VerificationDao.INSTANCE.init();
         SessionDao.INSTANCE.init();
+        MealDao.INSTANCE.init();
     }
 
     private static void parseArgs(final String @NotNull [] arguments) {

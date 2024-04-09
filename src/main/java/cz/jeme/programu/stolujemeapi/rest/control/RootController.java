@@ -17,7 +17,7 @@ public final class RootController {
 
     @GetMapping("/")
     @ResponseBody
-    public @NotNull Response root() {
+    private @NotNull Response root() {
         return new RootResponse();
     }
 
