@@ -23,11 +23,11 @@ public enum UserDao implements Dao {
             // language=mariadb
             final String statementStr = """
                     CREATE TABLE IF NOT EXISTS users (
-                    user_id MEDIUMINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    id_user MEDIUMINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                     email VARCHAR(%d) NOT NULL UNIQUE,
                     name VARCHAR(%d) NOT NULL UNIQUE,
                     verified BOOLEAN NOT NULL DEFAULT FALSE,
-                    registered_timestamp DATETIME NOT NULL,
+                    registered_time DATETIME NOT NULL,
                     password_hash VARCHAR(%d) NOT NULL,
                     password_salt VARCHAR(%d) NOT NULL
                     );
@@ -48,8 +48,8 @@ public enum UserDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
-                    SELECT email, name, verified, registered_timestamp, password_hash, password_salt
-                    FROM users WHERE user_id = ?;
+                    SELECT email, name, verified, registered_time, password_hash, password_salt
+                    FROM users WHERE id_user = ?;
                     """;
             final ResultSet result = wrapper
                     .wrap(connection.prepareStatement(statementStr))
@@ -76,7 +76,7 @@ public enum UserDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
-                    SELECT user_id, name, verified, registered_timestamp, password_hash, password_salt
+                    SELECT id_user, name, verified, registered_time, password_hash, password_salt
                     FROM users WHERE email = ?;
                     """;
             final ResultSet result = wrapper.wrap(connection.prepareStatement(statementStr))
@@ -103,7 +103,7 @@ public enum UserDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
-                    SELECT user_id, email, verified, registered_timestamp, password_hash, password_salt
+                    SELECT id_user, email, verified, registered_time, password_hash, password_salt
                     FROM users WHERE name = ?;
                     """;
             final ResultSet result = wrapper.wrap(connection.prepareStatement(statementStr))
@@ -131,7 +131,7 @@ public enum UserDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
-                    SELECT 1 FROM users WHERE user_id = ?;
+                    SELECT 1 FROM users WHERE id_user = ?;
                     """;
             return wrapper.wrap(connection.prepareStatement(statementStr))
                     .setInt(id)
@@ -180,7 +180,7 @@ public enum UserDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
-                    INSERT INTO users (email, name, registered_timestamp, password_hash, password_salt)
+                    INSERT INTO users (email, name, registered_time, password_hash, password_salt)
                     VALUES (?, ?, ?, ?, ?);
                     """;
             final LocalDateTime registered = LocalDateTime.now();

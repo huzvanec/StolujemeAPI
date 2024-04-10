@@ -22,13 +22,13 @@ public enum SessionDao implements Dao {
             // language=mariadb
             final String statementStr = """
                     CREATE TABLE IF NOT EXISTS sessions (
-                    session_id MEDIUMINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                    user_id MEDIUMINT UNSIGNED NOT NULL,
-                    creation_timestamp DATETIME NOT NULL,
-                    expiration_timestamp DATETIME NOT NULL,
+                    id_session MEDIUMINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    id_user MEDIUMINT UNSIGNED NOT NULL,
+                    creation_time DATETIME NOT NULL,
+                    expiration_time DATETIME NOT NULL,
                     token VARCHAR(%d) NOT NULL UNIQUE,
                     CONSTRAINT `fk_session_user`
-                        FOREIGN KEY (user_id) REFERENCES users (user_id)
+                        FOREIGN KEY (id_user) REFERENCES users (id_user)
                     );
                     """
                     .formatted(CryptoUtils.TOKEN_LENGTH_BASE64);
@@ -42,8 +42,8 @@ public enum SessionDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
-                    SELECT user_id, creation_timestamp, expiration_timestamp, token
-                    FROM sessions WHERE session_id = ?;
+                    SELECT id_user, creation_time, expiration_time, token
+                    FROM sessions WHERE id_session = ?;
                     """;
             final ResultSet result = wrapper.wrap(connection.prepareStatement(statementStr))
                     .setInt(id)
@@ -67,7 +67,7 @@ public enum SessionDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
-                    SELECT session_id, user_id, creation_timestamp, expiration_timestamp
+                    SELECT id_session, id_user, creation_time, expiration_time
                     FROM sessions WHERE token = ?;
                     """;
             final ResultSet result = wrapper.wrap(connection.prepareStatement(statementStr))
@@ -91,7 +91,7 @@ public enum SessionDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
-                    SELECT 1 FROM sessions WHERE session_id = ?;
+                    SELECT 1 FROM sessions WHERE id_session = ?;
                     """;
             return wrapper.wrap(connection.prepareStatement(statementStr))
                     .setInt(id)
@@ -124,7 +124,7 @@ public enum SessionDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
-                    INSERT INTO sessions (user_id, creation_timestamp, expiration_timestamp, token)
+                    INSERT INTO sessions (id_user, creation_time, expiration_time, token)
                     VALUES (?, ?, ?, ?);
                     """;
             final LocalDateTime creation = LocalDateTime.now();
@@ -146,6 +146,21 @@ public enum SessionDao implements Dao {
                     .expiration(expiration)
                     .token(skeleton.token())
                     .build();
+        } catch (final SQLException e) {
+            throw new RuntimeException("Could not create session!", e);
+        }
+    }
+
+    public boolean endSession(final int id) {
+        try (final Connection connection = database.connection()) {
+            // language=mariadb
+            final String statementStr = """
+                    UPDATE sessions SET expiration_time = CURRENT_TIMESTAMP WHERE id_session = ?;
+                    """;
+            return wrapper.wrap(connection.prepareStatement(statementStr))
+                           .setInt(id)
+                           .unwrap()
+                           .executeUpdate() > 0;
         } catch (final SQLException e) {
             throw new RuntimeException("Could not create session!", e);
         }

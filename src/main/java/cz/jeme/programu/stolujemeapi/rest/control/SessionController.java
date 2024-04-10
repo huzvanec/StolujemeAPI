@@ -25,19 +25,19 @@ import java.time.LocalDateTime;
 import java.util.function.Supplier;
 
 @RestController
-public final class LoginController {
+public final class SessionController {
     public static final @NotNull String CREDENTIALS = "#credentials";
     public static final @NotNull Duration SESSION_DURATION = Duration.ofDays(30);
 
     public static void throwIncorrectCredentials() {
-        throw new InvalidParamException(LoginController.CREDENTIALS, ApiErrorType.INVALID_CREDENTIALS);
+        throw new InvalidParamException(SessionController.CREDENTIALS, ApiErrorType.INVALID_CREDENTIALS);
     }
 
     public static @NotNull Supplier<@NotNull InvalidParamException> supplyIncorrectCredentials() {
-        return () -> new InvalidParamException(LoginController.CREDENTIALS, ApiErrorType.INVALID_CREDENTIALS);
+        return () -> new InvalidParamException(SessionController.CREDENTIALS, ApiErrorType.INVALID_CREDENTIALS);
     }
 
-    private LoginController() {
+    private SessionController() {
     }
 
     @PostMapping("/login")
@@ -54,11 +54,11 @@ public final class LoginController {
         );
 
         final User user = UserDao.INSTANCE.userByEmail(email)
-                .orElseThrow(LoginController.supplyIncorrectCredentials());
+                .orElseThrow(SessionController.supplyIncorrectCredentials());
 
         try {
             if (!CryptoUtils.validate(password, user.passwordHash(), user.passwordSalt()))
-                LoginController.throwIncorrectCredentials();
+                SessionController.throwIncorrectCredentials();
         } catch (final InvalidKeySpecException e) {
             throw new RuntimeException("Could not validate password!", e);
         }
@@ -68,7 +68,7 @@ public final class LoginController {
         final Session session = SessionDao.INSTANCE.insertSession(
                 new SessionSkeleton.Builder()
                         .userId(user.id())
-                        .duration(LoginController.SESSION_DURATION)
+                        .duration(SessionController.SESSION_DURATION)
                         .token(token)
                         .build()
         );
@@ -111,5 +111,13 @@ public final class LoginController {
         public @NotNull String sectionName() {
             return "login";
         }
+    }
+
+    @PostMapping("/logout")
+    @ResponseBody
+    private @NotNull Response logout() {
+        final Session session = ApiUtils.authenticate();
+        SessionDao.INSTANCE.endSession(session.id());
+        return ApiUtils.emptyResponse();
     }
 }

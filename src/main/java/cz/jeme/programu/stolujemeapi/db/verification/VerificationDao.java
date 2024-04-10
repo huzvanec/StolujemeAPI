@@ -22,13 +22,13 @@ public enum VerificationDao implements Dao {
             // language=mariadb
             final String statementStr = """
                     CREATE TABLE IF NOT EXISTS verifications (
-                    verification_id MEDIUMINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                    user_id MEDIUMINT UNSIGNED NOT NULL,
-                    creation_timestamp DATETIME NOT NULL,
-                    expiration_timestamp DATETIME NOT NULL,
+                    id_verification MEDIUMINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    id_user MEDIUMINT UNSIGNED NOT NULL,
+                    creation_time DATETIME NOT NULL,
+                    expiration_time DATETIME NOT NULL,
                     code VARCHAR(%d) NOT NULL UNIQUE,
                     CONSTRAINT `fk_verification_user`
-                        FOREIGN KEY (user_id) REFERENCES users (user_id)
+                        FOREIGN KEY (id_user) REFERENCES users (id_user)
                     );
                     """
                     .formatted(CryptoUtils.VERIFICATION_LENGTH_BASE64);
@@ -42,8 +42,8 @@ public enum VerificationDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
-                    SELECT user_id, creation_timestamp, expiration_timestamp, code
-                    FROM verifications WHERE verification_id = ?;
+                    SELECT id_user, creation_time, expiration_time, code
+                    FROM verifications WHERE id_verification = ?;
                     """;
             final ResultSet result = wrapper.wrap(connection.prepareStatement(statementStr))
                     .setInt(id)
@@ -68,7 +68,7 @@ public enum VerificationDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
-                    SELECT verification_id, user_id, creation_timestamp, expiration_timestamp
+                    SELECT id_verification, id_user, creation_time, expiration_time
                     FROM verifications WHERE code = ?;
                     """;
             final ResultSet result = wrapper.wrap(connection.prepareStatement(statementStr))
@@ -94,7 +94,7 @@ public enum VerificationDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
-                    SELECT 1 FROM verifications WHERE verification_id = ?;
+                    SELECT 1 FROM verifications WHERE id_verification = ?;
                     """;
             return wrapper.wrap(connection.prepareStatement(statementStr))
                     .setInt(id)
@@ -127,7 +127,7 @@ public enum VerificationDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
-                    INSERT INTO verifications (user_id, creation_timestamp, expiration_timestamp, code)
+                    INSERT INTO verifications (id_user, creation_time, expiration_time, code)
                     VALUES (?, ?, ?, ?);
                     """;
             final LocalDateTime creation = LocalDateTime.now();
@@ -155,27 +155,28 @@ public enum VerificationDao implements Dao {
     }
 
 
-    public void verify(final @NotNull Verification verification) {
+    public boolean verify(final @NotNull Verification verification) {
         if (verification.expired())
             throw new IllegalArgumentException("The verification provided has already expired!");
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String userStatementStr = """
-                    UPDATE users SET verified = TRUE WHERE user_id = ?;
+                    UPDATE users SET verified = TRUE WHERE id_user = ?;
                     """;
-            wrapper.wrap(connection.prepareStatement(userStatementStr))
-                    .setInt(verification.userId())
-                    .unwrap()
-                    .execute();
-
+            if (wrapper.wrap(connection.prepareStatement(userStatementStr))
+                        .setInt(verification.userId())
+                        .unwrap()
+                        .executeUpdate() <= 0)
+                return false;
             // language=mariadb
             final String cleanupStatementStr = """
-                    UPDATE verifications SET expiration_timestamp = CURRENT_TIMESTAMP WHERE user_id = ?;
+                    UPDATE verifications SET expiration_time = CURRENT_TIMESTAMP WHERE id_user = ?;
                     """;
             wrapper.wrap(connection.prepareStatement(cleanupStatementStr))
                     .setInt(verification.userId())
                     .unwrap()
                     .execute();
+            return true;
         } catch (final SQLException e) {
             throw new RuntimeException("Could not verify user!", e);
         }

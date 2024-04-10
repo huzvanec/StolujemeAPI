@@ -48,12 +48,12 @@ public final class VerificationController {
         );
 
         final User user = UserDao.INSTANCE.userByEmail(email)
-                .orElseThrow(LoginController.supplyIncorrectCredentials());
+                .orElseThrow(SessionController.supplyIncorrectCredentials());
 
 
         try {
             if (!CryptoUtils.validate(password, user.passwordHash(), user.passwordSalt()))
-                LoginController.throwIncorrectCredentials();
+                SessionController.throwIncorrectCredentials();
         } catch (final InvalidKeySpecException e) {
             throw new RuntimeException("Could not validate password!", e);
         }

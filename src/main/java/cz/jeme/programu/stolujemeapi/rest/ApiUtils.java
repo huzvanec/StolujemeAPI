@@ -1,5 +1,8 @@
 package cz.jeme.programu.stolujemeapi.rest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import cz.jeme.programu.stolujemeapi.db.CryptoUtils;
 import cz.jeme.programu.stolujemeapi.db.session.Session;
 import cz.jeme.programu.stolujemeapi.db.session.SessionDao;
@@ -25,6 +28,7 @@ public final class ApiUtils {
         }
     };
 
+    private static final @NotNull ObjectMapper MAPPER = new ObjectMapper();
     private static final @NotNull ApiException INVALID_AUTH = new ApiException(HttpStatus.UNAUTHORIZED, "Invalid authentication!");
 
     private ApiUtils() {
@@ -77,5 +81,21 @@ public final class ApiUtils {
 
     public static @NotNull Response emptyResponse() {
         return ApiUtils.EMPTY_RESPONSE;
+    }
+
+    public static @NotNull String jsonToString(final @NotNull Object object) {
+        try {
+            return ApiUtils.MAPPER.writeValueAsString(object);
+        } catch (final JsonProcessingException e) {
+            throw new IllegalArgumentException("Could not serialize json!", e);
+        }
+    }
+
+    public static @NotNull JsonNode stringToJson(final @NotNull String string) {
+        try {
+            return ApiUtils.MAPPER.readTree(string);
+        } catch (final JsonProcessingException e) {
+            throw new RuntimeException("Could not deserialize json!", e);
+        }
     }
 }

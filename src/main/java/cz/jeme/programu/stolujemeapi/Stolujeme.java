@@ -6,6 +6,8 @@ import cz.jeme.programu.stolujemeapi.db.session.SessionDao;
 import cz.jeme.programu.stolujemeapi.db.user.UserDao;
 import cz.jeme.programu.stolujemeapi.db.verification.VerificationDao;
 import org.jetbrains.annotations.NotNull;
+import org.quartz.*;
+import org.quartz.impl.StdSchedulerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -40,6 +42,22 @@ public class Stolujeme {
         VerificationDao.INSTANCE.init();
         SessionDao.INSTANCE.init();
         MealDao.INSTANCE.init();
+
+
+        // menu job
+        try {
+            final SchedulerFactory factory = new StdSchedulerFactory();
+            final Scheduler scheduler = factory.getScheduler();
+            final JobDetail job = JobBuilder.newJob(MenuJob.class).build();
+            final Trigger trigger = TriggerBuilder.newTrigger()
+                    .withSchedule(CronScheduleBuilder.dailyAtHourAndMinute(12, 0))
+                    .build();
+            scheduler.scheduleJob(job, trigger);
+            scheduler.triggerJob(job.getKey());
+            scheduler.start();
+        } catch (final SchedulerException e) {
+            throw new RuntimeException("Could not create menu job!", e);
+        }
     }
 
     private static void parseArgs(final String @NotNull [] arguments) {

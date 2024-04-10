@@ -1,5 +1,6 @@
 package cz.jeme.programu.stolujemeapi.db.meal;
 
+import cz.jeme.programu.stolujemeapi.Canteen;
 import cz.jeme.programu.stolujemeapi.db.Entry;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -10,12 +11,14 @@ import java.util.UUID;
 public class Meal implements Entry {
     private final int id;
     private final @NotNull UUID uuid;
+    private final @NotNull Canteen canteen;
     private final @NotNull Course course;
 
     private Meal(final @NotNull Builder builder) {
         id = Objects.requireNonNull(builder.id, "id");
         uuid = Objects.requireNonNull(builder.uuid, "uuid");
         course = Objects.requireNonNull(builder.course, "course");
+        canteen = Objects.requireNonNull(builder.canteen, "canteen");
     }
 
     @Override
@@ -31,9 +34,24 @@ public class Meal implements Entry {
         return course;
     }
 
+    public @NotNull Canteen canteen() {
+        return canteen;
+    }
+
+    @Override
+    public @NotNull String toString() {
+        return "Meal{" +
+               "id=" + id +
+               ", uuid=" + uuid +
+               ", canteen=" + canteen +
+               ", course=" + course +
+               '}';
+    }
+
     static final class Builder implements Entry.Builder<Builder, Meal> {
         private @Nullable Integer id;
         private @Nullable UUID uuid;
+        private @Nullable Canteen canteen;
         private @Nullable Course course;
 
         @Override
@@ -52,6 +70,11 @@ public class Meal implements Entry {
             return this;
         }
 
+        public @NotNull Builder canteen(final @NotNull Canteen canteen) {
+            this.canteen = canteen;
+            return this;
+        }
+
         @Override
         public @NotNull Meal build() {
             return new Meal(this);
@@ -62,37 +85,5 @@ public class Meal implements Entry {
         SOUP,
         MAIN,
         ADDITION
-    }
-
-    public enum Role {
-        SOUP,
-        ONE("1"),
-        TWO("2"),
-        THREE("3"),
-        ADDITION;
-
-        private final @NotNull String role;
-
-        Role(final @NotNull String role) {
-            this.role = role;
-        }
-
-        Role() {
-            role = name();
-        }
-
-
-        @Override
-        public @NotNull String toString() {
-            return role;
-        }
-
-        public @NotNull Course toCourse() {
-            return switch (this) {
-                case SOUP -> Course.SOUP;
-                case ONE, TWO, THREE -> Course.MAIN;
-                case ADDITION -> Course.ADDITION;
-            };
-        }
     }
 }
