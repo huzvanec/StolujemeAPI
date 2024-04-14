@@ -42,6 +42,23 @@ public class MenuEntry implements Entry {
     }
 
     @Override
+    public final boolean equals(final @Nullable Object object) {
+        if (this == object) return true;
+        if (!(object instanceof final MenuEntry menuEntry)) return false;
+
+        return id == menuEntry.id && mealId == menuEntry.mealId && date.equals(menuEntry.date) && Objects.equals(courseNumber, menuEntry.courseNumber);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = id;
+        result = 31 * result + mealId;
+        result = 31 * result + date.hashCode();
+        result = 31 * result + Objects.hashCode(courseNumber);
+        return result;
+    }
+
+    @Override
     public @NotNull String toString() {
         return "MenuEntry{" +
                "id=" + id +

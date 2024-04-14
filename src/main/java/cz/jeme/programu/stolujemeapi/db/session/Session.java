@@ -11,18 +11,18 @@ import java.util.Objects;
 public final class Session implements Entry {
     private final int id;
     private final int userId;
-    private final @NotNull LocalDateTime creation;
-    private final @NotNull LocalDateTime expiration;
+    private final @NotNull LocalDateTime creationTime;
+    private final @NotNull LocalDateTime expirationTime;
     private final @NotNull String token;
     private final @NotNull Duration duration;
 
     private Session(final @NotNull Builder builder) {
         id = Objects.requireNonNull(builder.id, "id");
         userId = Objects.requireNonNull(builder.userId, "userId");
-        creation = Objects.requireNonNull(builder.creation, "creation");
-        expiration = Objects.requireNonNull(builder.expiration, "expiration");
+        creationTime = Objects.requireNonNull(builder.creationTime, "creationTime");
+        expirationTime = Objects.requireNonNull(builder.expirationTime, "expirationTime");
         token = Objects.requireNonNull(builder.token, "token");
-        duration = Duration.between(creation, expiration);
+        duration = Duration.between(creationTime, expirationTime);
     }
 
     @Override
@@ -34,12 +34,12 @@ public final class Session implements Entry {
         return userId;
     }
 
-    public @NotNull LocalDateTime creation() {
-        return creation;
+    public @NotNull LocalDateTime creationTime() {
+        return creationTime;
     }
 
-    public @NotNull LocalDateTime expiration() {
-        return expiration;
+    public @NotNull LocalDateTime expirationTime() {
+        return expirationTime;
     }
 
     public @NotNull String token() {
@@ -51,7 +51,7 @@ public final class Session implements Entry {
     }
 
     public boolean expired() {
-        return !expiration.isAfter(LocalDateTime.now()); // not using isBefore to exclude equals
+        return !expirationTime.isAfter(LocalDateTime.now()); // not using isBefore to exclude equals
     }
 
     @Override
@@ -59,24 +59,36 @@ public final class Session implements Entry {
         if (this == o) return true;
         if (!(o instanceof final Session session)) return false;
 
-        return id == session.id && userId == session.userId && creation.equals(session.creation) && expiration.equals(session.expiration) && token.equals(session.token);
+        return id == session.id && userId == session.userId && creationTime.equals(session.creationTime) && expirationTime.equals(session.expirationTime) && token.equals(session.token);
     }
 
     @Override
     public int hashCode() {
         int result = id;
         result = 31 * result + userId;
-        result = 31 * result + creation.hashCode();
-        result = 31 * result + expiration.hashCode();
+        result = 31 * result + creationTime.hashCode();
+        result = 31 * result + expirationTime.hashCode();
         result = 31 * result + token.hashCode();
         return result;
+    }
+
+    @Override
+    public @NotNull String toString() {
+        return "Session{" +
+               "id=" + id +
+               ", userId=" + userId +
+               ", creationTime=" + creationTime +
+               ", expirationTime=" + expirationTime +
+               ", token='" + token + '\'' +
+               ", duration=" + duration +
+               '}';
     }
 
     static final class Builder implements Entry.Builder<Builder, Session> {
         private @Nullable Integer id;
         private @Nullable Integer userId;
-        private @Nullable LocalDateTime creation;
-        private @Nullable LocalDateTime expiration;
+        private @Nullable LocalDateTime creationTime;
+        private @Nullable LocalDateTime expirationTime;
         private @Nullable String token;
 
         public @NotNull Builder userId(final int userId) {
@@ -84,13 +96,13 @@ public final class Session implements Entry {
             return this;
         }
 
-        public @NotNull Builder creation(final @NotNull LocalDateTime creation) {
-            this.creation = creation;
+        public @NotNull Builder creationTime(final @NotNull LocalDateTime creationTime) {
+            this.creationTime = creationTime;
             return this;
         }
 
-        public @NotNull Builder expiration(final @NotNull LocalDateTime expiration) {
-            this.expiration = expiration;
+        public @NotNull Builder expirationTime(final @NotNull LocalDateTime expirationTime) {
+            this.expirationTime = expirationTime;
             return this;
         }
 

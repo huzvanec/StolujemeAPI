@@ -53,12 +53,12 @@ public enum SessionDao implements Dao {
             return Optional.of(new Session.Builder()
                     .id(id)
                     .userId(result.getInt(1))
-                    .creation(result.getTimestamp(2).toLocalDateTime())
-                    .expiration(result.getTimestamp(3).toLocalDateTime())
+                    .creationTime(result.getTimestamp(2).toLocalDateTime())
+                    .expirationTime(result.getTimestamp(3).toLocalDateTime())
                     .token(result.getString(4))
                     .build());
         } catch (final SQLException e) {
-            throw new RuntimeException("Could not find session by id!", e);
+            throw new RuntimeException("Could not find session!", e);
         }
     }
 
@@ -78,12 +78,12 @@ public enum SessionDao implements Dao {
             return Optional.of(new Session.Builder()
                     .id(result.getInt(1))
                     .userId(result.getInt(2))
-                    .creation(result.getTimestamp(3).toLocalDateTime())
-                    .expiration(result.getTimestamp(4).toLocalDateTime())
+                    .creationTime(result.getTimestamp(3).toLocalDateTime())
+                    .expirationTime(result.getTimestamp(4).toLocalDateTime())
                     .token(token)
                     .build());
         } catch (final SQLException e) {
-            throw new RuntimeException("Could not find session by token!", e);
+            throw new RuntimeException("Could not find session!", e);
         }
     }
 
@@ -99,7 +99,7 @@ public enum SessionDao implements Dao {
                     .executeQuery()
                     .next();
         } catch (final SQLException e) {
-            throw new RuntimeException("Could search for session id!", e);
+            throw new RuntimeException("Could search for session!", e);
         }
     }
 
@@ -116,7 +116,7 @@ public enum SessionDao implements Dao {
                     .executeQuery()
                     .next();
         } catch (final SQLException e) {
-            throw new RuntimeException("Could search for session token!", e);
+            throw new RuntimeException("Could search for session!", e);
         }
     }
 
@@ -138,12 +138,12 @@ public enum SessionDao implements Dao {
                     .unwrap();
             statement.execute();
             final ResultSet result = statement.getGeneratedKeys();
-            if (!result.next()) throw new RuntimeException("Session id was not returned!");
+            if (!result.next()) throw new RuntimeException("Id was not returned!");
             return new Session.Builder()
                     .id(result.getInt(1))
                     .userId(skeleton.userId())
-                    .creation(creation)
-                    .expiration(expiration)
+                    .creationTime(creation)
+                    .expirationTime(expiration)
                     .token(skeleton.token())
                     .build();
         } catch (final SQLException e) {
@@ -162,7 +162,7 @@ public enum SessionDao implements Dao {
                            .unwrap()
                            .executeUpdate() > 0;
         } catch (final SQLException e) {
-            throw new RuntimeException("Could not create session!", e);
+            throw new RuntimeException("Could not end session!", e);
         }
     }
 }

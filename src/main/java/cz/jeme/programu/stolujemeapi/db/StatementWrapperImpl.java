@@ -88,6 +88,18 @@ final class StatementWrapperImpl implements StatementWrapper {
         return setBoolean(index(), b);
     }
 
+    @Override
+    public @NotNull StatementWrapper setBoolean(final int parameterIndex, final @Nullable Boolean b, final int sqlType) throws SQLException {
+        return b == null
+                ? setNull(parameterIndex, sqlType)
+                : setBoolean(parameterIndex, b);
+    }
+
+    @Override
+    public @NotNull StatementWrapper setBoolean(final @Nullable Boolean b, final int sqlType) throws SQLException {
+        return setBoolean(index(), b, sqlType);
+    }
+
 
     @Override
     public @NotNull StatementWrapper setByte(final int parameterIndex, final byte b) throws SQLException {
@@ -100,6 +112,18 @@ final class StatementWrapperImpl implements StatementWrapper {
     @Override
     public @NotNull StatementWrapper setByte(final byte b) throws SQLException {
         return setByte(index(), b);
+    }
+
+    @Override
+    public @NotNull StatementWrapper setByte(final int parameterIndex, final @Nullable Byte b, final int sqlType) throws SQLException {
+        return b == null
+                ? setNull(parameterIndex, sqlType)
+                : setByte(parameterIndex, b);
+    }
+
+    @Override
+    public @NotNull StatementWrapper setByte(final @Nullable Byte b, final int sqlType) throws SQLException {
+        return setByte(index(), b, sqlType);
     }
 
 
@@ -116,6 +140,18 @@ final class StatementWrapperImpl implements StatementWrapper {
         return setShort(index(), s);
     }
 
+    @Override
+    public @NotNull StatementWrapper setShort(final int parameterIndex, final @Nullable Short s, final int sqlType) throws SQLException {
+        return s == null
+                ? setNull(parameterIndex, sqlType)
+                : setShort(parameterIndex, s);
+    }
+
+    @Override
+    public @NotNull StatementWrapper setShort(final @Nullable Short s, final int sqlType) throws SQLException {
+        return setShort(index(), s, sqlType);
+    }
+
 
     @Override
     public @NotNull StatementWrapper setInt(final int parameterIndex, final int i) throws SQLException {
@@ -128,6 +164,18 @@ final class StatementWrapperImpl implements StatementWrapper {
     @Override
     public @NotNull StatementWrapper setInt(final int i) throws SQLException {
         return setInt(index(), i);
+    }
+
+    @Override
+    public @NotNull StatementWrapper setInteger(final int parameterIndex, final @Nullable Integer i, final int sqlType) throws SQLException {
+        return i == null
+                ? setNull(parameterIndex, sqlType)
+                : setInt(parameterIndex, i);
+    }
+
+    @Override
+    public @NotNull StatementWrapper setInteger(final @Nullable Integer i, final int sqlType) throws SQLException {
+        return setInteger(index(), i, sqlType);
     }
 
 
@@ -144,6 +192,18 @@ final class StatementWrapperImpl implements StatementWrapper {
         return setLong(index(), l);
     }
 
+    @Override
+    public @NotNull StatementWrapper setLong(final int parameterIndex, final @Nullable Long l, final int sqlType) throws SQLException {
+        return l == null
+                ? setNull(parameterIndex, sqlType)
+                : setLong(parameterIndex, l);
+    }
+
+    @Override
+    public @NotNull StatementWrapper setLong(final @Nullable Long l, final int sqlType) throws SQLException {
+        return setLong(index(), l, sqlType);
+    }
+
 
     @Override
     public @NotNull StatementWrapper setFloat(final int parameterIndex, final float f) throws SQLException {
@@ -158,6 +218,18 @@ final class StatementWrapperImpl implements StatementWrapper {
         return setFloat(index(), f);
     }
 
+    @Override
+    public @NotNull StatementWrapper setFloat(final int parameterIndex, final @Nullable Float f, final int sqlType) throws SQLException {
+        return f == null
+                ? setNull(parameterIndex, sqlType)
+                : setFloat(parameterIndex, f);
+    }
+
+    @Override
+    public @NotNull StatementWrapper setFloat(final @Nullable Float f, final int sqlType) throws SQLException {
+        return setFloat(index(), f, sqlType);
+    }
+
 
     @Override
     public @NotNull StatementWrapper setDouble(final int parameterIndex, final double d) throws SQLException {
@@ -170,6 +242,18 @@ final class StatementWrapperImpl implements StatementWrapper {
     @Override
     public @NotNull StatementWrapper setDouble(final double d) throws SQLException {
         return setDouble(index(), d);
+    }
+
+    @Override
+    public @NotNull StatementWrapper setDouble(final int parameterIndex, final @Nullable Double d, final int sqlType) throws SQLException {
+        return d == null
+                ? setNull(parameterIndex, sqlType)
+                : setDouble(parameterIndex, d);
+    }
+
+    @Override
+    public @NotNull StatementWrapper setDouble(final @Nullable Double d, final int sqlType) throws SQLException {
+        return setDouble(index(), d, sqlType);
     }
 
 
@@ -258,7 +342,7 @@ final class StatementWrapperImpl implements StatementWrapper {
 
 
     @Override
-    public @NotNull StatementWrapper setAsciiStream(final int parameterIndex, final @NotNull InputStream inputStream, int length) throws SQLException {
+    public @NotNull StatementWrapper setAsciiStream(final int parameterIndex, final @NotNull InputStream inputStream, final int length) throws SQLException {
         statement().setAsciiStream(parameterIndex, inputStream, length);
         occupy(parameterIndex);
         return this;
@@ -266,7 +350,7 @@ final class StatementWrapperImpl implements StatementWrapper {
 
 
     @Override
-    public @NotNull StatementWrapper setAsciiStream(final @NotNull InputStream inputStream, int length) throws SQLException {
+    public @NotNull StatementWrapper setAsciiStream(final @NotNull InputStream inputStream, final int length) throws SQLException {
         return setAsciiStream(index(), inputStream, length);
     }
 
@@ -477,7 +561,7 @@ final class StatementWrapperImpl implements StatementWrapper {
 
 
     @Override
-    public @NotNull StatementWrapper setNCharacterStream(final int parameterIndex, final @NotNull Reader value, long length) throws SQLException {
+    public @NotNull StatementWrapper setNCharacterStream(final int parameterIndex, final @NotNull Reader value, final long length) throws SQLException {
         statement().setNCharacterStream(parameterIndex, value, length);
         occupy(parameterIndex);
         return this;
@@ -485,7 +569,7 @@ final class StatementWrapperImpl implements StatementWrapper {
 
 
     @Override
-    public @NotNull StatementWrapper setNCharacterStream(final @NotNull Reader value, long length) throws SQLException {
+    public @NotNull StatementWrapper setNCharacterStream(final @NotNull Reader value, final long length) throws SQLException {
         return setNCharacterStream(index(), value, length);
     }
 

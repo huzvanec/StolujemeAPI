@@ -35,6 +35,22 @@ public class MenuEntrySkeleton implements Skeleton {
     }
 
     @Override
+    public final boolean equals(final @Nullable Object object) {
+        if (this == object) return true;
+        if (!(object instanceof final MenuEntrySkeleton that)) return false;
+
+        return mealId == that.mealId && date.equals(that.date) && Objects.equals(courseNumber, that.courseNumber);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = mealId;
+        result = 31 * result + date.hashCode();
+        result = 31 * result + Objects.hashCode(courseNumber);
+        return result;
+    }
+
+    @Override
     public @NotNull String toString() {
         return "MenuEntrySkeleton{" +
                "mealId=" + mealId +

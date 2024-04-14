@@ -59,7 +59,7 @@ public enum VerificationDao implements Dao {
                     .build()
             );
         } catch (final SQLException e) {
-            throw new RuntimeException("Could not find verification by id!", e);
+            throw new RuntimeException("Could not find verification!", e);
         }
     }
 
@@ -86,7 +86,7 @@ public enum VerificationDao implements Dao {
                     .build()
             );
         } catch (final SQLException e) {
-            throw new RuntimeException("Could not find verification by code!", e);
+            throw new RuntimeException("Could not find verification!", e);
         }
     }
 
@@ -102,7 +102,7 @@ public enum VerificationDao implements Dao {
                     .executeQuery()
                     .next();
         } catch (final SQLException e) {
-            throw new RuntimeException("Could search for verification id!", e);
+            throw new RuntimeException("Could search for verification!", e);
         }
     }
 
@@ -119,7 +119,7 @@ public enum VerificationDao implements Dao {
                     .executeQuery()
                     .next();
         } catch (final SQLException e) {
-            throw new RuntimeException("Could search for verification code!", e);
+            throw new RuntimeException("Could search for verification!", e);
         }
     }
 
@@ -141,7 +141,7 @@ public enum VerificationDao implements Dao {
                     .unwrap();
             statement.execute();
             final ResultSet result = statement.getGeneratedKeys();
-            if (!result.next()) throw new RuntimeException("Verification id was not returned!");
+            if (!result.next()) throw new RuntimeException("Id was not returned!");
             return new Verification.Builder()
                     .id(result.getInt(1))
                     .userId(skeleton.userId())

@@ -46,6 +46,15 @@ public final class SessionSkeleton implements Skeleton {
         return result;
     }
 
+    @Override
+    public @NotNull String toString() {
+        return "SessionSkeleton{" +
+               "userId=" + userId +
+               ", token='" + token + '\'' +
+               ", duration=" + duration +
+               '}';
+    }
+
     public static final class Builder implements Skeleton.Builder<Builder, SessionSkeleton> {
         private @Nullable Integer userId;
         private @Nullable String token;

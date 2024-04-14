@@ -1,6 +1,7 @@
 package cz.jeme.programu.stolujemeapi.db;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.InputStream;
 import java.io.Reader;
@@ -40,11 +41,27 @@ public interface StatementWrapper {
 
 
     @NotNull
+    StatementWrapper setBoolean(final int parameterIndex, final @Nullable Boolean b, final int sqlType) throws SQLException;
+
+
+    @NotNull
+    StatementWrapper setBoolean(final @Nullable Boolean b, final int sqlType) throws SQLException;
+
+
+    @NotNull
     StatementWrapper setByte(final int parameterIndex, final byte b) throws SQLException;
 
 
     @NotNull
     StatementWrapper setByte(final byte b) throws SQLException;
+
+
+    @NotNull
+    StatementWrapper setByte(final int parameterIndex, final @Nullable Byte b, final int sqlType) throws SQLException;
+
+
+    @NotNull
+    StatementWrapper setByte(final @Nullable Byte b, final int sqlType) throws SQLException;
 
 
     @NotNull
@@ -56,11 +73,27 @@ public interface StatementWrapper {
 
 
     @NotNull
+    StatementWrapper setShort(final int parameterIndex, final @Nullable Short s, final int sqlType) throws SQLException;
+
+
+    @NotNull
+    StatementWrapper setShort(final @Nullable Short s, final int sqlType) throws SQLException;
+
+
+    @NotNull
     StatementWrapper setInt(final int parameterIndex, final int i) throws SQLException;
 
 
     @NotNull
     StatementWrapper setInt(final int i) throws SQLException;
+
+
+    @NotNull
+    StatementWrapper setInteger(final int parameterIndex, final @Nullable Integer i, final int sqlType) throws SQLException;
+
+
+    @NotNull
+    StatementWrapper setInteger(final @Nullable Integer i, final int sqlType) throws SQLException;
 
 
     @NotNull
@@ -72,6 +105,14 @@ public interface StatementWrapper {
 
 
     @NotNull
+    StatementWrapper setLong(final int parameterIndex, final @Nullable Long l, final int sqlType) throws SQLException;
+
+
+    @NotNull
+    StatementWrapper setLong(final @Nullable Long l, final int sqlType) throws SQLException;
+
+
+    @NotNull
     StatementWrapper setFloat(final int parameterIndex, final float f) throws SQLException;
 
 
@@ -80,11 +121,27 @@ public interface StatementWrapper {
 
 
     @NotNull
+    StatementWrapper setFloat(final int parameterIndex, final @Nullable Float f, final int sqlType) throws SQLException;
+
+
+    @NotNull
+    StatementWrapper setFloat(final @Nullable Float f, final int sqlType) throws SQLException;
+
+
+    @NotNull
     StatementWrapper setDouble(final int parameterIndex, final double d) throws SQLException;
 
 
     @NotNull
     StatementWrapper setDouble(final double d) throws SQLException;
+
+
+    @NotNull
+    StatementWrapper setDouble(final int parameterIndex, final @Nullable Double d, final int sqlType) throws SQLException;
+
+
+    @NotNull
+    StatementWrapper setDouble(final @Nullable Double d, final int sqlType) throws SQLException;
 
 
     @NotNull

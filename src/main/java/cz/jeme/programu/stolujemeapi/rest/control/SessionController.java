@@ -77,8 +77,8 @@ public final class SessionController {
                 email,
                 user.name(),
                 token,
-                session.creation(),
-                session.expiration()
+                session.creationTime(),
+                session.expirationTime()
         );
     }
 

@@ -1,10 +1,9 @@
 package cz.jeme.programu.stolujemeapi;
 
+import cz.jeme.programu.stolujemeapi.db.Dao;
 import cz.jeme.programu.stolujemeapi.db.Database;
-import cz.jeme.programu.stolujemeapi.db.meal.MealDao;
-import cz.jeme.programu.stolujemeapi.db.session.SessionDao;
-import cz.jeme.programu.stolujemeapi.db.user.UserDao;
-import cz.jeme.programu.stolujemeapi.db.verification.VerificationDao;
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ScanResult;
 import org.jetbrains.annotations.NotNull;
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
@@ -38,11 +37,18 @@ public class Stolujeme {
 
         // initialize database
         final Object ignored = Database.INSTANCE;
-        UserDao.INSTANCE.init();
-        VerificationDao.INSTANCE.init();
-        SessionDao.INSTANCE.init();
-        MealDao.INSTANCE.init();
-
+        // initialize daos
+        try (final ScanResult result = new ClassGraph()
+                .acceptPackages(Dao.class.getPackageName())
+                .scan()) {
+            for (final Class<?> clazz : result.getClassesImplementing(Dao.class).loadClasses()) {
+                if (!clazz.isEnum() || clazz.getEnumConstants().length != 1)
+                    throw new RuntimeException(clazz.getName() + " is not an enum singleton!");
+                @SuppressWarnings("unchecked") final Class<? extends Dao> tClass = (Class<? extends Dao>) clazz;
+                tClass.getEnumConstants()[0].init();
+                Stolujeme.LOGGER.info("Data access object initialization: {}", clazz.getName());
+            }
+        }
 
         // menu job
         try {

@@ -31,6 +31,31 @@ public class MealSkeleton implements Skeleton {
         return canteen;
     }
 
+    @Override
+    public final boolean equals(final @Nullable Object object) {
+        if (this == object) return true;
+        if (!(object instanceof final MealSkeleton that)) return false;
+
+        return uuid.equals(that.uuid) && course == that.course && canteen == that.canteen;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = uuid.hashCode();
+        result = 31 * result + course.hashCode();
+        result = 31 * result + canteen.hashCode();
+        return result;
+    }
+
+    @Override
+    public @NotNull String toString() {
+        return "MealSkeleton{" +
+               "uuid=" + uuid +
+               ", course=" + course +
+               ", canteen=" + canteen +
+               '}';
+    }
+
     public static final class Builder implements Skeleton.Builder<Builder, MealSkeleton> {
         private @NotNull UUID uuid = UUID.randomUUID();
         private @Nullable Meal.Course course;

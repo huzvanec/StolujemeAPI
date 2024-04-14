@@ -18,6 +18,7 @@ import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.util.UUID;
 import java.util.function.Function;
 
 public final class ApiUtils {
@@ -54,6 +55,15 @@ public final class ApiUtils {
                 name,
                 type
         );
+    }
+
+    public static @NotNull UUID uuid(final @Nullable String uuidStr, final @NotNull String name) {
+        ApiUtils.require(uuidStr, name);
+        try {
+            return UUID.fromString(uuidStr);
+        } catch (final IllegalArgumentException e) {
+            throw new InvalidParamException(name, ApiErrorType.UUID_CONTENTS_INVALID);
+        }
     }
 
     public static @NotNull Session authenticate() {

@@ -136,8 +136,8 @@ public final class VerificationController {
         return new AuthTestResponse(
                 user.email(),
                 user.name(),
-                session.creation(),
-                session.expiration()
+                session.creationTime(),
+                session.expirationTime()
         );
     }
 

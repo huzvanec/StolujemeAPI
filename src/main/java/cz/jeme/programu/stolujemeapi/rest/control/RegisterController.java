@@ -1,10 +1,12 @@
 package cz.jeme.programu.stolujemeapi.rest.control;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import cz.jeme.programu.stolujemeapi.Canteen;
 import cz.jeme.programu.stolujemeapi.db.CryptoUtils;
 import cz.jeme.programu.stolujemeapi.db.user.UserDao;
 import cz.jeme.programu.stolujemeapi.db.user.UserSkeleton;
 import cz.jeme.programu.stolujemeapi.error.ApiErrorType;
+import cz.jeme.programu.stolujemeapi.error.InvalidParamException;
 import cz.jeme.programu.stolujemeapi.rest.ApiUtils;
 import cz.jeme.programu.stolujemeapi.rest.Request;
 import cz.jeme.programu.stolujemeapi.rest.Response;
@@ -57,9 +59,16 @@ public final class RegisterController {
         } catch (final InvalidKeySpecException e) {
             throw new RuntimeException("Could not hash password!", e);
         }
+
+        // TODO
+        final Canteen canteen = Canteen.CESKOLIPSKA;
+        if (!email.endsWith("@ceskolipska.cz"))
+            throw new InvalidParamException("email", ApiErrorType.CESKOLIPSKA_BETA);
+
         UserDao.INSTANCE.insertUser(new UserSkeleton.Builder()
                 .email(email)
                 .name(name)
+                .canteen(canteen)
                 .passwordHash(hash)
                 .passwordSalt(salt)
                 .build()

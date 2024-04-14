@@ -80,7 +80,7 @@ public enum MealDao implements Dao {
                     .build()
             );
         } catch (final SQLException e) {
-            throw new RuntimeException("Could not find meal by id!", e);
+            throw new RuntimeException("Could not find meal!", e);
         }
     }
 
@@ -104,7 +104,7 @@ public enum MealDao implements Dao {
                     .build()
             );
         } catch (final SQLException e) {
-            throw new RuntimeException("Could not find meal by id!", e);
+            throw new RuntimeException("Could not find meal!", e);
         }
     }
 
@@ -120,7 +120,7 @@ public enum MealDao implements Dao {
                     .executeQuery()
                     .next();
         } catch (final SQLException e) {
-            throw new RuntimeException("Could search for meal uuid!", e);
+            throw new RuntimeException("Could search for meal!", e);
         }
     }
 
@@ -140,7 +140,7 @@ public enum MealDao implements Dao {
                     .unwrap();
             statement.execute();
             final ResultSet result = statement.getGeneratedKeys();
-            if (!result.next()) throw new RuntimeException("Meal id was not returned!");
+            if (!result.next()) throw new RuntimeException("Id was not returned!");
             return new Meal.Builder()
                     .id(result.getInt(1))
                     .uuid(skeleton.uuid())
@@ -164,7 +164,7 @@ public enum MealDao implements Dao {
                     .executeQuery()
                     .next();
         } catch (final SQLException e) {
-            throw new RuntimeException("Could search for meal uuid!", e);
+            throw new RuntimeException("Could search for meal!", e);
         }
     }
 
@@ -192,7 +192,7 @@ public enum MealDao implements Dao {
                     .build()
             );
         } catch (final SQLException e) {
-            throw new RuntimeException("Could not find menu entry by id!", e);
+            throw new RuntimeException("Could not find menu entry!", e);
         }
     }
 
@@ -209,24 +209,7 @@ public enum MealDao implements Dao {
                     .executeQuery()
                     .next();
         } catch (final SQLException e) {
-            throw new RuntimeException("Could search for menu entry uuid!", e);
-        }
-    }
-
-    public boolean existsMenuEntryDatedMealId(final int mealId, final @NotNull LocalDate date) {
-        try (final Connection connection = database.connection()) {
-            // language=mariadb
-            final String statementStr = """
-                    SELECT 1 FROM menu WHERE id_meal = ? AND date = ?;
-                    """;
-            return wrapper.wrap(connection.prepareStatement(statementStr))
-                    .setInt(mealId)
-                    .setDate(Date.valueOf(date))
-                    .unwrap()
-                    .executeQuery()
-                    .next();
-        } catch (final SQLException e) {
-            throw new RuntimeException("Could search for menu entry skeleton!", e);
+            throw new RuntimeException("Could search for menu entry!", e);
         }
     }
 
@@ -237,18 +220,14 @@ public enum MealDao implements Dao {
                     INSERT INTO menu (id_meal, date, course_number)
                     VALUES (?, ?, ?);
                     """;
-            wrapper.wrap(connection.prepareStatement(statementStr, Statement.RETURN_GENERATED_KEYS))
+            final PreparedStatement statement = wrapper.wrap(connection.prepareStatement(statementStr, Statement.RETURN_GENERATED_KEYS))
                     .setInt(skeleton.mealId())
-                    .setDate(Date.valueOf(skeleton.date()));
-            if (skeleton.hasCourseNumber()) {
-                wrapper.setInt(Objects.requireNonNull(skeleton.courseNumber()));
-            } else {
-                wrapper.setNull(Types.NULL);
-            }
-            final PreparedStatement statement = wrapper.unwrap();
+                    .setDate(Date.valueOf(skeleton.date()))
+                    .setInteger(skeleton.courseNumber(), Types.NULL)
+                    .unwrap();
             statement.execute();
             final ResultSet result = statement.getGeneratedKeys();
-            if (!result.next()) throw new RuntimeException("Meal entry id was not returned!");
+            if (!result.next()) throw new RuntimeException("Id was not returned!");
             return new MenuEntry.Builder()
                     .id(result.getInt(1))
                     .mealId(skeleton.mealId())
@@ -256,7 +235,42 @@ public enum MealDao implements Dao {
                     .courseNumber(skeleton.courseNumber())
                     .build();
         } catch (final SQLException e) {
-            throw new RuntimeException("Could not create meal entry!", e);
+            throw new RuntimeException("Could not create menu entry!", e);
+        }
+    }
+
+    public void updateMenuDay(final @NotNull LocalDate date, final @NotNull Collection<MenuEntrySkeleton> entries) {
+        try (final Connection connection = database.connection()) {
+            connection.setAutoCommit(false);
+            try {
+                // language=mariadb
+                final String deleteStatementStr = """
+                        DELETE FROM menu WHERE date = ?;
+                        """;
+                wrapper.wrap(connection.prepareStatement(deleteStatementStr))
+                        .setDate(Date.valueOf(date))
+                        .unwrap()
+                        .execute();
+
+                // language=mariadb
+                final String insertStatementStr = """
+                        INSERT INTO menu (id_meal, date, course_number) VALUES (?, ?, ?);
+                        """;
+                for (final MenuEntrySkeleton skeleton : entries) {
+                    wrapper.wrap(connection.prepareStatement(insertStatementStr))
+                            .setInt(skeleton.mealId())
+                            .setDate(Date.valueOf(date))
+                            .setInteger(skeleton.courseNumber(), Types.NULL)
+                            .unwrap()
+                            .execute();
+                }
+                connection.commit();
+            } catch (final SQLException e) {
+                connection.rollback();
+                throw e;
+            }
+        } catch (final SQLException e) {
+            throw new RuntimeException("Could not update menu entries!", e);
         }
     }
 
@@ -274,7 +288,7 @@ public enum MealDao implements Dao {
                     .executeQuery()
                     .next();
         } catch (final SQLException e) {
-            throw new RuntimeException("Could search for meal name!", e);
+            throw new RuntimeException("Could search for meal!", e);
         }
     }
 
@@ -296,7 +310,7 @@ public enum MealDao implements Dao {
                     name
             ));
         } catch (final SQLException e) {
-            throw new RuntimeException("Could not find session by token!", e);
+            throw new RuntimeException("Could not find meal!", e);
         }
     }
 
@@ -321,7 +335,7 @@ public enum MealDao implements Dao {
             }
             return names;
         } catch (final SQLException e) {
-            throw new RuntimeException("Could not find meal names by meal id!", e);
+            throw new RuntimeException("Could not find meal names!", e);
         }
     }
 
@@ -338,7 +352,7 @@ public enum MealDao implements Dao {
             final PreparedStatement statement = wrapper.unwrap();
             statement.execute();
             final ResultSet result = statement.getGeneratedKeys();
-            if (!result.next()) throw new RuntimeException("Meal name id was not returned!");
+            if (!result.next()) throw new RuntimeException("Id was not returned!");
             return new MealName(
                     result.getInt(1),
                     skeleton.mealId(),

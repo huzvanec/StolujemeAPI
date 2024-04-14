@@ -1,5 +1,6 @@
 package cz.jeme.programu.stolujemeapi.db.user;
 
+import cz.jeme.programu.stolujemeapi.Canteen;
 import cz.jeme.programu.stolujemeapi.db.CryptoUtils;
 import cz.jeme.programu.stolujemeapi.db.Dao;
 import cz.jeme.programu.stolujemeapi.db.Database;
@@ -26,6 +27,7 @@ public enum UserDao implements Dao {
                     id_user MEDIUMINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                     email VARCHAR(%d) NOT NULL UNIQUE,
                     name VARCHAR(%d) NOT NULL UNIQUE,
+                    canteen VARCHAR(25) NOT NULL,
                     verified BOOLEAN NOT NULL DEFAULT FALSE,
                     registered_time DATETIME NOT NULL,
                     password_hash VARCHAR(%d) NOT NULL,
@@ -48,7 +50,7 @@ public enum UserDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
-                    SELECT email, name, verified, registered_time, password_hash, password_salt
+                    SELECT email, name, canteen, verified, registered_time, password_hash, password_salt
                     FROM users WHERE id_user = ?;
                     """;
             final ResultSet result = wrapper
@@ -61,14 +63,15 @@ public enum UserDao implements Dao {
                     .id(id)
                     .email(result.getString(1))
                     .name(result.getString(2))
-                    .verified(result.getBoolean(3))
-                    .registered(result.getTimestamp(4).toLocalDateTime())
-                    .passwordHash(result.getString(5))
-                    .passwordSalt(result.getString(6))
+                    .canteen(Canteen.valueOf(result.getString(3)))
+                    .verified(result.getBoolean(4))
+                    .registeredTime(result.getTimestamp(5).toLocalDateTime())
+                    .passwordHash(result.getString(6))
+                    .passwordSalt(result.getString(7))
                     .build()
             );
         } catch (final SQLException e) {
-            throw new RuntimeException("Could not find user by id!", e);
+            throw new RuntimeException("Could not find user!", e);
         }
     }
 
@@ -76,7 +79,7 @@ public enum UserDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
-                    SELECT id_user, name, verified, registered_time, password_hash, password_salt
+                    SELECT id_user, name, canteen, verified, registered_time, password_hash, password_salt
                     FROM users WHERE email = ?;
                     """;
             final ResultSet result = wrapper.wrap(connection.prepareStatement(statementStr))
@@ -88,14 +91,15 @@ public enum UserDao implements Dao {
                     .id(result.getInt(1))
                     .email(email)
                     .name(result.getString(2))
-                    .verified(result.getBoolean(3))
-                    .registered(result.getTimestamp(4).toLocalDateTime())
-                    .passwordHash(result.getString(5))
-                    .passwordSalt(result.getString(6))
+                    .canteen(Canteen.valueOf(result.getString(3)))
+                    .verified(result.getBoolean(4))
+                    .registeredTime(result.getTimestamp(5).toLocalDateTime())
+                    .passwordHash(result.getString(6))
+                    .passwordSalt(result.getString(7))
                     .build()
             );
         } catch (final SQLException e) {
-            throw new RuntimeException("Could not find user by email!", e);
+            throw new RuntimeException("Could not find user!", e);
         }
     }
 
@@ -103,7 +107,7 @@ public enum UserDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
-                    SELECT id_user, email, verified, registered_time, password_hash, password_salt
+                    SELECT id_user, email, canteen, verified, registered_time, password_hash, password_salt
                     FROM users WHERE name = ?;
                     """;
             final ResultSet result = wrapper.wrap(connection.prepareStatement(statementStr))
@@ -115,14 +119,15 @@ public enum UserDao implements Dao {
                     .id(result.getInt(1))
                     .email(result.getString(2))
                     .name(name)
-                    .verified(result.getBoolean(3))
-                    .registered(result.getTimestamp(4).toLocalDateTime())
-                    .passwordHash(result.getString(5))
+                    .canteen(Canteen.valueOf(result.getString(3)))
+                    .verified(result.getBoolean(4))
+                    .registeredTime(result.getTimestamp(5).toLocalDateTime())
+                    .passwordHash(result.getString(6))
                     .passwordSalt(result.getString(6))
                     .build()
             );
         } catch (final SQLException e) {
-            throw new RuntimeException("Could not find user by name!", e);
+            throw new RuntimeException("Could not find user!", e);
         }
     }
 
@@ -139,7 +144,7 @@ public enum UserDao implements Dao {
                     .executeQuery()
                     .next();
         } catch (final SQLException e) {
-            throw new RuntimeException("Could search for user id!", e);
+            throw new RuntimeException("Could search for user!", e);
         }
     }
 
@@ -155,7 +160,7 @@ public enum UserDao implements Dao {
                     .executeQuery()
                     .next();
         } catch (final SQLException e) {
-            throw new RuntimeException("Could search for user email!", e);
+            throw new RuntimeException("Could search for user!", e);
         }
     }
 
@@ -171,7 +176,7 @@ public enum UserDao implements Dao {
                     .executeQuery()
                     .next();
         } catch (final SQLException e) {
-            throw new RuntimeException("Could search for user name!", e);
+            throw new RuntimeException("Could search for user!", e);
         }
     }
 
@@ -180,32 +185,34 @@ public enum UserDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
-                    INSERT INTO users (email, name, registered_time, password_hash, password_salt)
-                    VALUES (?, ?, ?, ?, ?);
+                    INSERT INTO users (email, name, canteen, registered_time, password_hash, password_salt)
+                    VALUES (?, ?, ?, ?, ?, ?);
                     """;
             final LocalDateTime registered = LocalDateTime.now();
             final PreparedStatement statement = wrapper
                     .wrap(connection.prepareStatement(statementStr, Statement.RETURN_GENERATED_KEYS))
                     .setString(skeleton.email())
                     .setString(skeleton.name())
+                    .setString(skeleton.canteen().toString())
                     .setTimestamp(Timestamp.valueOf(registered))
                     .setString(skeleton.passwordHash())
                     .setString(skeleton.passwordSalt())
                     .unwrap();
             statement.execute();
             final ResultSet result = statement.getGeneratedKeys();
-            if (!result.next()) throw new RuntimeException("User id was not returned!");
+            if (!result.next()) throw new RuntimeException("Id was not returned!");
             return new User.Builder()
                     .id(result.getInt(1))
                     .email(skeleton.email())
                     .name(skeleton.name())
+                    .canteen(skeleton.canteen())
                     .verified(false)
-                    .registered(registered)
+                    .registeredTime(registered)
                     .passwordHash(skeleton.passwordHash())
                     .passwordSalt(skeleton.passwordSalt())
                     .build();
         } catch (final SQLException e) {
-            throw new RuntimeException("Could not register user!", e);
+            throw new RuntimeException("Could not create user!", e);
         }
     }
 }

@@ -16,7 +16,7 @@ public class Meal implements Entry {
 
     private Meal(final @NotNull Builder builder) {
         id = Objects.requireNonNull(builder.id, "id");
-        uuid = Objects.requireNonNull(builder.uuid, "uuid");
+        uuid = Objects.requireNonNull(builder.uuid, "mealUuid");
         course = Objects.requireNonNull(builder.course, "course");
         canteen = Objects.requireNonNull(builder.canteen, "canteen");
     }
@@ -39,10 +39,27 @@ public class Meal implements Entry {
     }
 
     @Override
+    public final boolean equals(final @Nullable Object object) {
+        if (this == object) return true;
+        if (!(object instanceof final Meal meal)) return false;
+
+        return id == meal.id && uuid.equals(meal.uuid) && canteen == meal.canteen && course == meal.course;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = id;
+        result = 31 * result + uuid.hashCode();
+        result = 31 * result + canteen.hashCode();
+        result = 31 * result + course.hashCode();
+        return result;
+    }
+
+    @Override
     public @NotNull String toString() {
         return "Meal{" +
                "id=" + id +
-               ", uuid=" + uuid +
+               ", mealUuid=" + uuid +
                ", canteen=" + canteen +
                ", course=" + course +
                '}';

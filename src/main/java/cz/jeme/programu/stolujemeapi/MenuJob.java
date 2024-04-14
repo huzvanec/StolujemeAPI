@@ -14,6 +14,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public final class MenuJob implements Job {
@@ -45,21 +47,29 @@ public final class MenuJob implements Job {
     }
 
     private void processMenu(final @NotNull Canteen canteen, final @NotNull JsonNode tables) {
-        for (final JsonNode table : tables) {
-            for (final JsonNode mealData : table) {
+        final List<MenuEntrySkeleton> dayEntries = new ArrayList<>();
+        for (final JsonNode day : tables) {
+            dayEntries.clear();
+            final LocalDate date = LocalDate.parse(
+                    day.get(0).get("datum").asText(),
+                    MenuJob.DATE_FORMATTER
+            );
+            for (final JsonNode mealData : day) {
                 final String name = mealData.get("nazev").asText();
                 if (!canteen.mealValid(mealData))
                     continue; // the canteen has dementia and this meal is just a placeholder
-                final LocalDate date = LocalDate.parse(
-                        mealData.get("datum").asText(),
-                        MenuJob.DATE_FORMATTER
-                );
+
                 final String type = mealData.get("druh").asText();
                 final Meal.Course course = canteen.course(type);
                 final Integer courseNumber = course == Meal.Course.MAIN ? Integer.parseInt(type) : null;
                 // get meal
                 final Meal meal;
-                if (!mealDao.existsMealName(name)) {
+                if (mealDao.existsMealName(name)) {
+                    final MealName mealName = mealDao.mealNameByName(name)
+                            .orElseThrow(() -> new RuntimeException("Meal name exists, but was not returned!"));
+                    meal = mealDao.mealById(mealName.mealId())
+                            .orElseThrow(() -> new RuntimeException("Meal id exists, but meal was not returned!"));
+                } else {
                     meal = mealDao.insertMeal(new MealSkeleton.Builder()
                             .canteen(canteen)
                             .course(course)
@@ -69,21 +79,15 @@ public final class MenuJob implements Job {
                             meal.id(),
                             name
                     ));
-                } else {
-                    final MealName mealName = mealDao.mealNameByName(name)
-                            .orElseThrow(() -> new RuntimeException("Meal name exists, but was not returned!"));
-                    meal = mealDao.mealById(mealName.mealId())
-                            .orElseThrow(() -> new RuntimeException("Meal id exists, but meal was not returned!"));
                 }
-                if (!mealDao.existsMenuEntryDatedMealId(meal.id(), date)) {
-                    mealDao.insertMenuEntry(new MenuEntrySkeleton.Builder()
-                            .mealId(meal.id())
-                            .date(date)
-                            .courseNumber(courseNumber)
-                            .build()
-                    );
-                }
+                dayEntries.add(new MenuEntrySkeleton.Builder()
+                        .date(date)
+                        .mealId(meal.id())
+                        .courseNumber(courseNumber)
+                        .build()
+                );
             }
+            mealDao.updateMenuDay(date, dayEntries);
         }
     }
 
