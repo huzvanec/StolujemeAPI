@@ -26,15 +26,15 @@ import java.util.function.Supplier;
 
 @RestController
 public final class SessionController {
-    public static final @NotNull String CREDENTIALS = "#credentials";
+    public static final @NotNull String CREDENTIALS_PLACEHOLDER = "#credentials";
     public static final @NotNull Duration SESSION_DURATION = Duration.ofDays(30);
 
     public static void throwIncorrectCredentials() {
-        throw new InvalidParamException(SessionController.CREDENTIALS, ApiErrorType.INVALID_CREDENTIALS);
+        throw new InvalidParamException(SessionController.CREDENTIALS_PLACEHOLDER, ApiErrorType.INVALID_CREDENTIALS);
     }
 
     public static @NotNull Supplier<@NotNull InvalidParamException> supplyIncorrectCredentials() {
-        return () -> new InvalidParamException(SessionController.CREDENTIALS, ApiErrorType.INVALID_CREDENTIALS);
+        return () -> new InvalidParamException(SessionController.CREDENTIALS_PLACEHOLDER, ApiErrorType.INVALID_CREDENTIALS);
     }
 
     private SessionController() {
@@ -73,13 +73,7 @@ public final class SessionController {
                         .build()
         );
 
-        return new LoginResponse(
-                email,
-                user.name(),
-                token,
-                session.creationTime(),
-                session.expirationTime()
-        );
+        return new LoginResponse(new SessionData(session));
     }
 
     public record LoginRequest(
@@ -92,32 +86,50 @@ public final class SessionController {
     }
 
     public record LoginResponse(
-            @JsonProperty("email")
-            @NotNull String email,
-
-            @JsonProperty("name")
-            @NotNull String name,
-
-            @JsonProperty("token")
-            @NotNull String token,
-
-            @JsonProperty("creation")
-            @NotNull LocalDateTime creation,
-
-            @JsonProperty("expiration")
-            @NotNull LocalDateTime expiration
+            @JsonProperty("session")
+            @NotNull SessionData sessionData
     ) implements Response {
-        @Override
-        public @NotNull String sectionName() {
-            return "login";
-        }
     }
 
     @PostMapping("/logout")
     @ResponseBody
     private @NotNull Response logout() {
         final Session session = ApiUtils.authenticate();
-        SessionDao.INSTANCE.endSession(session.id());
+        if (!SessionDao.INSTANCE.endSession(session.id()))
+            throw new RuntimeException("Session could not be ended!");
         return ApiUtils.emptyResponse();
+    }
+
+    @PostMapping("/auth")
+    @ResponseBody
+    private @NotNull Response auth() { // test auth
+        final Session session = ApiUtils.authenticate();
+        final User user = UserDao.INSTANCE.userById(session.userId())
+                .orElseThrow(() -> new RuntimeException("Session user id does not correspond to any users!"));
+        return new AuthResponse(
+                new UserController.UserData(user),
+                new SessionData(session)
+        );
+    }
+
+    public record AuthResponse(
+            @JsonProperty("user")
+            @NotNull UserController.UserData userData,
+            @JsonProperty("session")
+            @NotNull SessionData sessionData
+    ) implements Response {
+    }
+
+    public record SessionData(
+            @JsonProperty("token")
+            @NotNull String token,
+            @JsonProperty("creationTime")
+            @NotNull LocalDateTime creationTime,
+            @JsonProperty("expirationTime")
+            @NotNull LocalDateTime expirationTime
+    ) {
+        public SessionData(final @NotNull Session session) {
+            this(session.token(), session.creationTime(), session.expirationTime());
+        }
     }
 }

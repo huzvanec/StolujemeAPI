@@ -53,8 +53,8 @@ public enum VerificationDao implements Dao {
             return Optional.of(new Verification.Builder()
                     .id(id)
                     .userId(result.getInt(1))
-                    .creation(result.getTimestamp(2).toLocalDateTime())
-                    .expiration(result.getTimestamp(3).toLocalDateTime())
+                    .creationTime(result.getTimestamp(2).toLocalDateTime())
+                    .expirationTime(result.getTimestamp(3).toLocalDateTime())
                     .code(result.getString(4))
                     .build()
             );
@@ -80,8 +80,8 @@ public enum VerificationDao implements Dao {
             return Optional.of(new Verification.Builder()
                     .id(result.getInt(1))
                     .userId(result.getInt(2))
-                    .creation(result.getTimestamp(3).toLocalDateTime())
-                    .expiration(result.getTimestamp(4).toLocalDateTime())
+                    .creationTime(result.getTimestamp(3).toLocalDateTime())
+                    .expirationTime(result.getTimestamp(4).toLocalDateTime())
                     .code(code)
                     .build()
             );
@@ -145,8 +145,8 @@ public enum VerificationDao implements Dao {
             return new Verification.Builder()
                     .id(result.getInt(1))
                     .userId(skeleton.userId())
-                    .creation(creation)
-                    .expiration(expiration)
+                    .creationTime(creation)
+                    .expirationTime(expiration)
                     .code(skeleton.code())
                     .build();
         } catch (final SQLException e) {

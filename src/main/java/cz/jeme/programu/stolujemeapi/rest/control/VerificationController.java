@@ -2,7 +2,6 @@ package cz.jeme.programu.stolujemeapi.rest.control;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import cz.jeme.programu.stolujemeapi.db.CryptoUtils;
-import cz.jeme.programu.stolujemeapi.db.session.Session;
 import cz.jeme.programu.stolujemeapi.db.user.User;
 import cz.jeme.programu.stolujemeapi.db.user.UserDao;
 import cz.jeme.programu.stolujemeapi.db.verification.Verification;
@@ -72,10 +71,10 @@ public final class VerificationController {
         );
 
         return new SendResponse(
-                email,
-                user.name(),
-                verification.creation(),
-                verification.expiration()
+                new VerificationData(
+                        verification.creationTime(),
+                        verification.expirationTime()
+                )
         );
     }
 
@@ -89,19 +88,9 @@ public final class VerificationController {
     }
 
     public record SendResponse(
-            @JsonProperty("email")
-            @NotNull String email,
-            @JsonProperty("name")
-            @NotNull String name,
-            @JsonProperty("creation")
-            @NotNull LocalDateTime creation,
-            @JsonProperty("expiration")
-            @NotNull LocalDateTime expiration
+            @JsonProperty("verification")
+            @NotNull VerificationData verificationData
     ) implements Response {
-        @Override
-        public @NotNull String sectionName() {
-            return "verification";
-        }
     }
 
     @PostMapping("/verify")
@@ -127,33 +116,14 @@ public final class VerificationController {
     ) implements Request {
     }
 
-    @PostMapping("/auth")
-    @ResponseBody
-    private @NotNull Response testAuth() {
-        final Session session = ApiUtils.authenticate();
-        final User user = UserDao.INSTANCE.userById(session.userId())
-                .orElseThrow(() -> new RuntimeException("Session user id does not correspond to any users!"));
-        return new AuthTestResponse(
-                user.email(),
-                user.name(),
-                session.creationTime(),
-                session.expirationTime()
-        );
-    }
-
-    public record AuthTestResponse(
-            @JsonProperty("email")
-            @NotNull String email,
-            @JsonProperty("name")
-            @NotNull String name,
-            @JsonProperty("creation")
-            @NotNull LocalDateTime creation,
-            @JsonProperty("expiration")
-            @NotNull LocalDateTime expiration
-    ) implements Response {
-        @Override
-        public @NotNull String sectionName() {
-            return "session";
+    public record VerificationData(
+            @JsonProperty("creationTime")
+            @NotNull LocalDateTime creationTime,
+            @JsonProperty("expirationTime")
+            @NotNull LocalDateTime expirationTime
+    ) {
+        public VerificationData(final @NotNull Verification verification) {
+            this(verification.creationTime(), verification.expirationTime());
         }
     }
 }

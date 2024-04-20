@@ -31,18 +31,6 @@ public enum MealDao implements Dao {
                     """;
             connection.prepareStatement(mealsStatementStr).execute();
             // language=mariadb
-            final String menuStatementStr = """
-                    CREATE TABLE IF NOT EXISTS menu (
-                    id_menu MEDIUMINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                    id_meal MEDIUMINT UNSIGNED NOT NULL,
-                    date DATE NOT NULL,
-                    course_number TINYINT,
-                    CONSTRAINT `fk_menu_meal`
-                        FOREIGN KEY (id_meal) REFERENCES meals (id_meal)
-                    );
-                    """;
-            connection.prepareStatement(menuStatementStr).execute();
-            // language=mariadb
             final String mealNamesStatementStr = """
                     CREATE TABLE IF NOT EXISTS meal_names (
                     id_meal_name MEDIUMINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -53,6 +41,19 @@ public enum MealDao implements Dao {
                     );
                     """;
             connection.prepareStatement(mealNamesStatementStr).execute();
+            // language=mariadb
+            final String menuStatementStr = """
+                    CREATE TABLE IF NOT EXISTS menu (
+                    id_menu MEDIUMINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    id_meal MEDIUMINT UNSIGNED NOT NULL,
+                    id_meal_name MEDIUMINT UNSIGNED NOT NULL,
+                    date DATE NOT NULL,
+                    course_number TINYINT,
+                    CONSTRAINT `fk_menu_meal`
+                        FOREIGN KEY (id_meal) REFERENCES meals (id_meal)
+                    );
+                    """;
+            connection.prepareStatement(menuStatementStr).execute();
         } catch (final SQLException e) {
             throw new RuntimeException("Could not initialize meal data access object!", e);
         }
@@ -191,6 +192,41 @@ public enum MealDao implements Dao {
                             : result.getInt(3))
                     .build()
             );
+        } catch (final SQLException e) {
+            throw new RuntimeException("Could not find menu entry!", e);
+        }
+    }
+
+    public @NotNull List<MenuEntry> menuEntriesByDates(final @NotNull LocalDate fromDate,
+                                                       final @NotNull LocalDate toDate) {
+        if (fromDate.isAfter(toDate))
+            throw new IllegalArgumentException("From date is after to date!");
+        try (final Connection connection = database.connection()) {
+            // language=mariadb
+            final String statementStr = """
+                    SELECT id_menu, id_meal, date, course_number
+                    FROM menu WHERE date BETWEEN ? AND ?
+                    ORDER BY date;
+                    """;
+            final ResultSet result = wrapper.wrap(connection.prepareStatement(statementStr))
+                    .setDate(Date.valueOf(fromDate))
+                    .setDate(Date.valueOf(toDate))
+                    .unwrap()
+                    .executeQuery();
+
+            final List<MenuEntry> menuEntries = new ArrayList<>();
+            while (result.next()) {
+                menuEntries.add(new MenuEntry.Builder()
+                        .id(result.getInt(1))
+                        .mealId(result.getInt(2))
+                        .date(result.getDate(3).toLocalDate())
+                        .courseNumber(result.getObject(4) == null
+                                ? null
+                                : result.getInt(4))
+                        .build()
+                );
+            }
+            return menuEntries;
         } catch (final SQLException e) {
             throw new RuntimeException("Could not find menu entry!", e);
         }

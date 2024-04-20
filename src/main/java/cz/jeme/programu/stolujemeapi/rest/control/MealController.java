@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import cz.jeme.programu.stolujemeapi.Canteen;
 import cz.jeme.programu.stolujemeapi.db.meal.Meal;
 import cz.jeme.programu.stolujemeapi.db.meal.MealDao;
+import cz.jeme.programu.stolujemeapi.db.meal.MenuEntry;
 import cz.jeme.programu.stolujemeapi.db.photo.Photo;
 import cz.jeme.programu.stolujemeapi.db.photo.PhotoDao;
 import cz.jeme.programu.stolujemeapi.error.ApiErrorType;
@@ -18,8 +19,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.UUID;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.TemporalAdjusters;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 public final class MealController {
@@ -44,9 +49,7 @@ public final class MealController {
                 .toList();
 
         return new MealResponse(
-                uuid,
-                meal.canteen(),
-                meal.course(),
+                new MealData(meal),
                 photoUuids
         );
     }
@@ -58,18 +61,140 @@ public final class MealController {
     }
 
     public record MealResponse(
-            @JsonProperty("mealUuid")
-            @NotNull UUID mealUuid,
-            @JsonProperty("canteen")
-            @NotNull Canteen canteen,
-            @JsonProperty("course")
-            @NotNull Meal.Course course,
+            @JsonProperty("meal")
+            @NotNull MealData mealData,
             @JsonProperty("photos")
             @NotNull List<UUID> photos
     ) implements Response {
+    }
+
+    public record MealData(
+            @JsonProperty("uuid")
+            @NotNull UUID uuid,
+            @JsonProperty("canteen")
+            @NotNull Canteen canteen,
+            @JsonProperty("course")
+            @NotNull Meal.Course course
+    ) {
+        public MealData(final @NotNull Meal meal) {
+            this(meal.uuid(), meal.canteen(), meal.course());
+        }
+    }
+
+    @GetMapping("/menu")
+    @ResponseBody
+    private @NotNull Response menu(final @NotNull @RequestBody MenuRequest request) {
+        final LocalDate fromDate = request.fromDate() == null
+                ? LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                : parseDate(request.fromDate(), "fromDate");
+
+        final LocalDate toDate = request.toDate() == null
+                ? LocalDate.now().with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY))
+                : parseDate(request.toDate(), "toDate");
+
+        if (fromDate.isAfter(toDate))
+            throw new InvalidParamException("fromDate", ApiErrorType.DATE_ORDER_INVALID);
+
+        MealDao.INSTANCE.menuEntriesByDates(fromDate, toDate).forEach(System.out::println);
+
+        final Map<LocalDate, List<MenuEntryData>> entries = MealDao.INSTANCE.menuEntriesByDates(fromDate, toDate)
+                .stream()
+                .collect(Collectors.groupingBy(
+                        MenuEntry::date,
+                        TreeMap::new,
+                        Collectors.mapping(
+                                menuEntry -> new MenuEntryData(
+                                        new MenuMealData(MealDao.INSTANCE.mealById(menuEntry.mealId())
+                                                .orElseThrow(
+                                                        () -> new RuntimeException("Could not find menu entry meal!")
+                                                )),
+                                        menuEntry.courseNumber()
+                                ),
+                                Collectors.toList()
+                        )
+                ));
+
+        entries.values().forEach(list -> list.sort(MenuEntryDataComparator.INSTANCE));
+
+        return new MenuResponse(entries);
+    }
+
+    private @NotNull LocalDate parseDate(final @NotNull String dateStr, final @NotNull String paramName) {
+        try {
+            return LocalDate.parse(dateStr);
+        } catch (final DateTimeParseException e) {
+            throw new InvalidParamException(paramName, ApiErrorType.DATE_CONTENTS_INVALID);
+        }
+    }
+
+    public record MenuRequest(
+            @JsonProperty("fromDate")
+            @Nullable String fromDate,
+            @JsonProperty("toDate")
+            @Nullable String toDate
+    ) implements Request {
+    }
+
+    public record MenuResponse(
+            @JsonProperty("menu")
+            @NotNull Map<LocalDate, List<MenuEntryData>> menuEntries
+    ) implements Response {
+    }
+
+    public record MenuEntryData(
+            @JsonProperty("meal")
+            @NotNull MenuMealData mealData,
+            @JsonProperty("courseNumber")
+            @Nullable Integer courseNumber
+    ) {
+    }
+
+    public enum MenuEntryDataComparator implements Comparator<MenuEntryData> {
+        INSTANCE;
+
         @Override
-        public @NotNull String sectionName() {
-            return "meal";
+        public int compare(final @NotNull MenuEntryData entry1, final @NotNull MenuEntryData entry2) {
+            final Meal.Course course1 = entry1.mealData().course();
+            final Meal.Course course2 = entry2.mealData().course();
+
+            final Integer courseNumber1 = entry1.courseNumber();
+            final Integer courseNumber2 = entry2.courseNumber();
+
+            // soup always goes first
+            if (course1 == Meal.Course.SOUP && course2 != Meal.Course.SOUP) {
+                return -1;
+            } else if (course1 != Meal.Course.SOUP && course2 == Meal.Course.SOUP) {
+                return 1;
+            }
+
+            // compare main courses by course numbers
+            // course numbers are always nonnull
+            if (course1 == Meal.Course.MAIN && course2 == Meal.Course.MAIN) {
+                return Integer.compare(
+                        Objects.requireNonNull(courseNumber1),
+                        Objects.requireNonNull(courseNumber2)
+                );
+            }
+
+            // addition always goes last
+            if (course1 == Meal.Course.ADDITION && course2 != Meal.Course.ADDITION) {
+                return 1;
+            } else if (course1 != Meal.Course.ADDITION && course2 == Meal.Course.ADDITION) {
+                return -1;
+            }
+
+            return 0;
+        }
+    }
+
+    public record MenuMealData(
+            @JsonProperty("uuid")
+            @NotNull UUID uuid,
+            @JsonProperty("course")
+            @NotNull Meal.Course course
+    ) {
+        public MenuMealData(final @NotNull Meal meal) {
+            this(meal.uuid(), meal.course());
         }
     }
 }

@@ -48,7 +48,7 @@ public final class PhotoController {
     }
 
     private final @NotNull InvalidParamException invalidPhoto = new InvalidParamException("photo", ApiErrorType.PHOTO_CONTENTS_INVALID);
-    private final @NotNull File photoDir = new File(Stolujeme.args().get("photos"));
+    private final @NotNull File photoDir = new File(Objects.requireNonNull(Stolujeme.args().get("photos"), "photos"));
 
     {
         if (!photoDir.mkdirs() && !photoDir.isDirectory())
@@ -65,9 +65,15 @@ public final class PhotoController {
         } catch (final IllegalArgumentException e) {
             throw invalidPhoto;
         }
-        final UUID mealUuid = ApiUtils.uuid(request.mealUuid(), "mealUuid");
+
+        final UUID mealUuid = ApiUtils.parseUuid(request.mealUuid(), "mealUuid");
         final Meal meal = MealDao.INSTANCE.mealByUuid(mealUuid)
                 .orElseThrow(() -> new InvalidParamException("mealUuid", ApiErrorType.MEAL_UUID_INVALID));
+
+        final Duration photoAge = Duration.between(getTimeTaken(imageData), LocalDateTime.now());
+        if (photoAge.compareTo(PhotoController.MAX_PHOTO_AGE) > 0)
+            // photo age is greater than maximum photo age
+            throw invalidPhoto;
 
         final UUID photoUuid = UUID.randomUUID();
 
@@ -75,14 +81,9 @@ public final class PhotoController {
         mealDir.mkdir();
         final String outputPath = Path.of(mealDir.getAbsolutePath(), photoUuid + ".avif").toString();
 
-        final Duration photoAge = Duration.between(getTimeTaken(imageData), LocalDateTime.now());
-        if (photoAge.compareTo(PhotoController.MAX_PHOTO_AGE) > 0)
-            // photo age is greater than maximum photo age
-            throw invalidPhoto;
-
         final ProcessBuilder processBuilder = new ProcessBuilder(
                 "convert", "-",
-                "-resize", PhotoController.IMAGE_DIMENSION_MAX + "x" + PhotoController.IMAGE_DIMENSION_MAX + ">",
+                "-resize", PhotoController.IMAGE_DIMENSION_MAX + 'x' + PhotoController.IMAGE_DIMENSION_MAX + ">",
                 "-quality", String.valueOf(PhotoController.IMAGE_QUALITY),
                 outputPath
         );
@@ -106,7 +107,6 @@ public final class PhotoController {
                 .build());
 
         return new PhotoPostResponse(
-                mealUuid,
                 photoUuid,
                 photo.uploadedTime()
         );
@@ -142,32 +142,26 @@ public final class PhotoController {
 
 
     public record PhotoPostRequest(
-            @JsonProperty("photo")
-            @Nullable String imageData,
             @JsonProperty("mealUuid")
-            @Nullable String mealUuid
+            @Nullable String mealUuid,
+            @JsonProperty("photo")
+            @Nullable String imageData
     ) implements Request {
     }
 
     public record PhotoPostResponse(
-            @JsonProperty("mealUuid")
-            @NotNull UUID mealUuid,
             @JsonProperty("photoUuid")
             @NotNull UUID photoUuid,
-            @JsonProperty("uploaded")
-            @NotNull LocalDateTime uploaded
+            @JsonProperty("uploadedTime")
+            @NotNull LocalDateTime uploadedTime
     ) implements Response {
-        @Override
-        public @NotNull String sectionName() {
-            return "photo";
-        }
     }
 
     @GetMapping("/photo")
     @ResponseBody
     private @NotNull ResponseEntity<InputStreamResource> photo(final @NotNull @RequestBody PhotoGetRequest request) {
         ApiUtils.authenticate();
-        final UUID photoUuid = ApiUtils.uuid(request.uuid(), "photoUuid");
+        final UUID photoUuid = ApiUtils.parseUuid(request.photoUuid(), "photoUuid");
 
 
         final Photo photo = PhotoDao.INSTANCE.photoByUuid(photoUuid)
@@ -185,7 +179,7 @@ public final class PhotoController {
 
     public record PhotoGetRequest(
             @JsonProperty("photoUuid")
-            @Nullable String uuid
+            @Nullable String photoUuid
     ) implements Request {
     }
 }

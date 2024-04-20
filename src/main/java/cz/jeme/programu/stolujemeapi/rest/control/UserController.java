@@ -3,6 +3,7 @@ package cz.jeme.programu.stolujemeapi.rest.control;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import cz.jeme.programu.stolujemeapi.Canteen;
 import cz.jeme.programu.stolujemeapi.db.CryptoUtils;
+import cz.jeme.programu.stolujemeapi.db.user.User;
 import cz.jeme.programu.stolujemeapi.db.user.UserDao;
 import cz.jeme.programu.stolujemeapi.db.user.UserSkeleton;
 import cz.jeme.programu.stolujemeapi.error.ApiErrorType;
@@ -21,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.security.spec.InvalidKeySpecException;
 
 @RestController
-public final class RegisterController {
+public final class UserController {
     public static final int NAME_LENGTH_MIN = 3;
     public static final int NAME_LENGTH_MAX = 30;
     // language=regexp
@@ -30,7 +31,7 @@ public final class RegisterController {
     public static final int PASSWORD_LENGTH_MAX = 100;
     public static final int EMAIL_LENGTH_MAX = 250;
 
-    private RegisterController() {
+    private UserController() {
     }
 
     @PostMapping("/register")
@@ -52,6 +53,11 @@ public final class RegisterController {
                 this::passwordValid
         );
 
+        // TODO
+        final Canteen canteen = Canteen.CESKOLIPSKA;
+        if (!email.endsWith("@ceskolipska.cz"))
+            throw new InvalidParamException("email", ApiErrorType.CESKOLIPSKA_BETA);
+
         final String salt = CryptoUtils.genSalt();
         final String hash;
         try {
@@ -59,11 +65,6 @@ public final class RegisterController {
         } catch (final InvalidKeySpecException e) {
             throw new RuntimeException("Could not hash password!", e);
         }
-
-        // TODO
-        final Canteen canteen = Canteen.CESKOLIPSKA;
-        if (!email.endsWith("@ceskolipska.cz"))
-            throw new InvalidParamException("email", ApiErrorType.CESKOLIPSKA_BETA);
 
         UserDao.INSTANCE.insertUser(new UserSkeleton.Builder()
                 .email(email)
@@ -74,29 +75,27 @@ public final class RegisterController {
                 .build()
         );
 
-        return new RegisterResponse(
-                email, name
-        );
+        return ApiUtils.emptyResponse();
     }
 
     public @NotNull ApiErrorType nameValid(final @NotNull String name) {
         final int length = name.length();
-        if (length < RegisterController.NAME_LENGTH_MIN || length > RegisterController.NAME_LENGTH_MAX)
+        if (length < UserController.NAME_LENGTH_MIN || length > UserController.NAME_LENGTH_MAX)
             return ApiErrorType.NAME_LENGTH_INVALID;
-        if (!name.matches(RegisterController.NAME_REGEX)) return ApiErrorType.NAME_CONTENTS_INVALID;
+        if (!name.matches(UserController.NAME_REGEX)) return ApiErrorType.NAME_CONTENTS_INVALID;
         if (UserDao.INSTANCE.existsUserName(name)) return ApiErrorType.NAME_NOT_UNIQUE;
         return ApiErrorType.OK;
     }
 
     public @NotNull ApiErrorType passwordValid(final @NotNull String password) {
         final int length = password.length();
-        if (length < RegisterController.PASSWORD_LENGTH_MIN || length > RegisterController.PASSWORD_LENGTH_MAX)
+        if (length < UserController.PASSWORD_LENGTH_MIN || length > UserController.PASSWORD_LENGTH_MAX)
             return ApiErrorType.PASSWORD_LENGTH_INVALID;
         return ApiErrorType.OK;
     }
 
     public @NotNull ApiErrorType emailValid(final @NotNull String email) {
-        if (email.length() > RegisterController.EMAIL_LENGTH_MAX) return ApiErrorType.EMAIL_LENGTH_INVALID;
+        if (email.length() > UserController.EMAIL_LENGTH_MAX) return ApiErrorType.EMAIL_LENGTH_INVALID;
         if (!EmailValidator.getInstance().isValid(email)) return ApiErrorType.EMAIL_CONTENTS_INVALID;
         if (UserDao.INSTANCE.existsUserEmail(email)) return ApiErrorType.EMAIL_NOT_UNIQUE;
         return ApiErrorType.OK;
@@ -114,16 +113,14 @@ public final class RegisterController {
     ) implements Request {
     }
 
-    public record RegisterResponse(
+    public record UserData(
             @JsonProperty("email")
             @NotNull String email,
-
             @JsonProperty("name")
             @NotNull String name
-    ) implements Response {
-        @Override
-        public @NotNull String sectionName() {
-            return "registration";
+    ) {
+        public UserData(final @NotNull User user) {
+            this(user.email(), user.name());
         }
     }
 }

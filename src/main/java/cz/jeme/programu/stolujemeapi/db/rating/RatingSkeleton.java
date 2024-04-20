@@ -56,7 +56,7 @@ public final class RatingSkeleton implements Skeleton {
                '}';
     }
 
-    static class Builder implements Skeleton.Builder<Builder, RatingSkeleton> {
+    public static class Builder implements Skeleton.Builder<Builder, RatingSkeleton> {
         private @Nullable Integer mealId;
         private @Nullable Integer userId;
         @Range(from = 0, to = 10)

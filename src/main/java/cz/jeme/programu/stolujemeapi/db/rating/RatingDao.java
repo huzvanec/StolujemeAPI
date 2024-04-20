@@ -7,6 +7,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.sql.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public enum RatingDao implements Dao {
@@ -140,6 +142,34 @@ public enum RatingDao implements Dao {
                 throw new RuntimeException("No rating was updated!");
         } catch (final SQLException e) {
             throw new RuntimeException("Could not update rating!", e);
+        }
+    }
+
+    public @NotNull List<Rating> ratingsByUserId(final int userId) {
+        try (final Connection connection = database.connection()) {
+            // language=mariadb
+            final String statementStr = """
+                    SELECT id_rating, id_meal, rating, rating_time
+                    FROM ratings WHERE id_user = ?;
+                    """;
+            final ResultSet result = wrapper.wrap(connection.prepareStatement(statementStr))
+                    .setInt(userId)
+                    .unwrap()
+                    .executeQuery();
+            final List<Rating> ratings = new ArrayList<>();
+            while (result.next()) {
+                ratings.add(new Rating.Builder()
+                        .id(result.getInt(1))
+                        .mealId(result.getInt(2))
+                        .userId(userId)
+                        .rating(result.getInt(3))
+                        .ratingTime(result.getTimestamp(4).toLocalDateTime())
+                        .build()
+                );
+            }
+            return ratings;
+        } catch (final SQLException e) {
+            throw new RuntimeException("Could not find ratings!", e);
         }
     }
 }

@@ -8,5 +8,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 public interface Response {
     @JsonIgnore
     @Nullable
-    String sectionName();
+    default String sectionName() {
+        return "content";
+    }
 }

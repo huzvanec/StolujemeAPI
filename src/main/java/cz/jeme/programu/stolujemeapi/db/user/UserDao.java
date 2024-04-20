@@ -5,7 +5,7 @@ import cz.jeme.programu.stolujemeapi.db.CryptoUtils;
 import cz.jeme.programu.stolujemeapi.db.Dao;
 import cz.jeme.programu.stolujemeapi.db.Database;
 import cz.jeme.programu.stolujemeapi.db.StatementWrapper;
-import cz.jeme.programu.stolujemeapi.rest.control.RegisterController;
+import cz.jeme.programu.stolujemeapi.rest.control.UserController;
 import org.jetbrains.annotations.NotNull;
 
 import java.sql.*;
@@ -35,8 +35,8 @@ public enum UserDao implements Dao {
                     );
                     """
                     .formatted(
-                            RegisterController.EMAIL_LENGTH_MAX,
-                            RegisterController.NAME_LENGTH_MAX,
+                            UserController.EMAIL_LENGTH_MAX,
+                            UserController.NAME_LENGTH_MAX,
                             CryptoUtils.KEY_LENGTH_BASE64,
                             CryptoUtils.SALT_LENGTH_BASE64
                     );

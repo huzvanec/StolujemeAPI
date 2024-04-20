@@ -11,18 +11,18 @@ import java.util.Objects;
 public final class Verification implements Entry {
     private final int id;
     private final int userId;
-    private final @NotNull LocalDateTime creation;
-    private final @NotNull LocalDateTime expiration;
+    private final @NotNull LocalDateTime creationTime;
+    private final @NotNull LocalDateTime expirationTime;
     private final @NotNull String code;
     private final @NotNull Duration duration;
 
     private Verification(final @NotNull Builder builder) {
         id = Objects.requireNonNull(builder.id, "id");
         userId = Objects.requireNonNull(builder.userId, "userId");
-        creation = Objects.requireNonNull(builder.creation, "creation");
-        expiration = Objects.requireNonNull(builder.expiration, "expiration");
+        creationTime = Objects.requireNonNull(builder.creationTime, "creationTime");
+        expirationTime = Objects.requireNonNull(builder.expirationTime, "expirationTime");
         code = Objects.requireNonNull(builder.code, "code");
-        duration = Duration.between(creation, expiration);
+        duration = Duration.between(creationTime, expirationTime);
     }
 
     @Override
@@ -34,12 +34,12 @@ public final class Verification implements Entry {
         return userId;
     }
 
-    public @NotNull LocalDateTime creation() {
-        return creation;
+    public @NotNull LocalDateTime creationTime() {
+        return creationTime;
     }
 
-    public @NotNull LocalDateTime expiration() {
-        return expiration;
+    public @NotNull LocalDateTime expirationTime() {
+        return expirationTime;
     }
 
     public @NotNull String code() {
@@ -51,7 +51,7 @@ public final class Verification implements Entry {
     }
 
     public boolean expired() {
-        return !expiration.isAfter(LocalDateTime.now()); // not using isBefore to exclude equals
+        return !expirationTime.isAfter(LocalDateTime.now()); // not using isBefore to exclude equals
     }
 
     @Override
@@ -59,15 +59,15 @@ public final class Verification implements Entry {
         if (this == o) return true;
         if (!(o instanceof final Verification that)) return false;
 
-        return id == that.id && userId == that.userId && creation.equals(that.creation) && expiration.equals(that.expiration) && code.equals(that.code);
+        return id == that.id && userId == that.userId && creationTime.equals(that.creationTime) && expirationTime.equals(that.expirationTime) && code.equals(that.code);
     }
 
     @Override
     public int hashCode() {
         int result = id;
         result = 31 * result + userId;
-        result = 31 * result + creation.hashCode();
-        result = 31 * result + expiration.hashCode();
+        result = 31 * result + creationTime.hashCode();
+        result = 31 * result + expirationTime.hashCode();
         result = 31 * result + code.hashCode();
         return result;
     }
@@ -75,8 +75,8 @@ public final class Verification implements Entry {
     static final class Builder implements Entry.Builder<Builder, Verification> {
         private @Nullable Integer id;
         private @Nullable Integer userId;
-        private @Nullable LocalDateTime creation;
-        private @Nullable LocalDateTime expiration;
+        private @Nullable LocalDateTime creationTime;
+        private @Nullable LocalDateTime expirationTime;
         private @Nullable String code;
 
         public @NotNull Builder userId(final int userId) {
@@ -84,13 +84,13 @@ public final class Verification implements Entry {
             return this;
         }
 
-        public @NotNull Builder creation(final @NotNull LocalDateTime creation) {
-            this.creation = creation;
+        public @NotNull Builder creationTime(final @NotNull LocalDateTime creationTime) {
+            this.creationTime = creationTime;
             return this;
         }
 
-        public @NotNull Builder expiration(final @NotNull LocalDateTime expiration) {
-            this.expiration = expiration;
+        public @NotNull Builder expirationTime(final @NotNull LocalDateTime expirationTime) {
+            this.expirationTime = expirationTime;
             return this;
         }
 

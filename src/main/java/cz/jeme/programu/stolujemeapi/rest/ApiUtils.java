@@ -30,7 +30,7 @@ public final class ApiUtils {
     };
 
     private static final @NotNull ObjectMapper MAPPER = new ObjectMapper();
-    private static final @NotNull ApiException INVALID_AUTH = new ApiException(HttpStatus.UNAUTHORIZED, "Invalid authentication!");
+    private static final @NotNull ApiException INVALID_AUTHENTICATION = new ApiException(HttpStatus.UNAUTHORIZED, ApiErrorType.AUTHENTICATION_INVALID);
 
     private ApiUtils() {
         throw new AssertionError();
@@ -57,7 +57,7 @@ public final class ApiUtils {
         );
     }
 
-    public static @NotNull UUID uuid(final @Nullable String uuidStr, final @NotNull String name) {
+    public static @NotNull UUID parseUuid(final @Nullable String uuidStr, final @NotNull String name) {
         ApiUtils.require(uuidStr, name);
         try {
             return UUID.fromString(uuidStr);
@@ -76,16 +76,16 @@ public final class ApiUtils {
         if (token == null)
             throw new ApiException(
                     HttpStatus.UNAUTHORIZED,
-                    "Missing authentication (bearer token)!"
+                    ApiErrorType.MISSING_AUTHENTICATION
             );
         if (!token.startsWith("Bearer "))
-            throw ApiUtils.INVALID_AUTH;
+            throw ApiUtils.INVALID_AUTHENTICATION;
         token = token.substring(7);
         if (token.length() != CryptoUtils.TOKEN_LENGTH_BASE64)
-            throw ApiUtils.INVALID_AUTH;
+            throw ApiUtils.INVALID_AUTHENTICATION;
         final Session session = SessionDao.INSTANCE.sessionByToken(token)
-                .orElseThrow(() -> ApiUtils.INVALID_AUTH);
-        if (session.expired()) throw ApiUtils.INVALID_AUTH;
+                .orElseThrow(() -> ApiUtils.INVALID_AUTHENTICATION);
+        if (session.expired()) throw ApiUtils.INVALID_AUTHENTICATION;
         return session;
     }
 
