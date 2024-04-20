@@ -9,17 +9,23 @@ import java.util.Objects;
 
 public class MenuEntrySkeleton implements Skeleton {
     private final int mealId;
+    private final int mealNameId;
     private final @NotNull LocalDate date;
     private final @Nullable Integer courseNumber;
 
     private MenuEntrySkeleton(final @NotNull Builder builder) {
         this.mealId = Objects.requireNonNull(builder.mealId, "mealId");
+        this.mealNameId = Objects.requireNonNull(builder.mealNameId, "mealNameId");
         this.date = Objects.requireNonNull(builder.date, "date");
         this.courseNumber = builder.courseNumber;
     }
 
     public int mealId() {
         return mealId;
+    }
+
+    public int mealNameId() {
+        return mealNameId;
     }
 
     public @NotNull LocalDate date() {
@@ -39,12 +45,16 @@ public class MenuEntrySkeleton implements Skeleton {
         if (this == object) return true;
         if (!(object instanceof final MenuEntrySkeleton that)) return false;
 
-        return mealId == that.mealId && date.equals(that.date) && Objects.equals(courseNumber, that.courseNumber);
+        return mealId == that.mealId &&
+               mealNameId == that.mealNameId &&
+               date.equals(that.date) &&
+               Objects.equals(courseNumber, that.courseNumber);
     }
 
     @Override
     public int hashCode() {
         int result = mealId;
+        result = 31 * result + mealNameId;
         result = 31 * result + date.hashCode();
         result = 31 * result + Objects.hashCode(courseNumber);
         return result;
@@ -54,6 +64,7 @@ public class MenuEntrySkeleton implements Skeleton {
     public @NotNull String toString() {
         return "MenuEntrySkeleton{" +
                "mealId=" + mealId +
+               ", mealNameId=" + mealNameId +
                ", date=" + date +
                ", courseNumber=" + courseNumber +
                '}';
@@ -61,11 +72,17 @@ public class MenuEntrySkeleton implements Skeleton {
 
     public static final class Builder implements Skeleton.Builder<Builder, MenuEntrySkeleton> {
         private @Nullable Integer mealId;
+        private @Nullable Integer mealNameId;
         private @Nullable LocalDate date;
         private @Nullable Integer courseNumber;
 
         public @NotNull Builder mealId(final int mealId) {
             this.mealId = mealId;
+            return this;
+        }
+
+        public @NotNull Builder mealNameId(final int mealNameId) {
+            this.mealNameId = mealNameId;
             return this;
         }
 

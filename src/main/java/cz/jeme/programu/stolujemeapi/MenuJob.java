@@ -64,8 +64,9 @@ public final class MenuJob implements Job {
                 final Integer courseNumber = course == Meal.Course.MAIN ? Integer.parseInt(type) : null;
                 // get meal
                 final Meal meal;
+                final MealName mealName;
                 if (mealDao.existsMealName(name)) {
-                    final MealName mealName = mealDao.mealNameByName(name)
+                    mealName = mealDao.mealNameByName(name)
                             .orElseThrow(() -> new RuntimeException("Meal name exists, but was not returned!"));
                     meal = mealDao.mealById(mealName.mealId())
                             .orElseThrow(() -> new RuntimeException("Meal id exists, but meal was not returned!"));
@@ -75,7 +76,7 @@ public final class MenuJob implements Job {
                             .course(course)
                             .build()
                     );
-                    mealDao.insertMealName(new MealNameSkeleton(
+                    mealName = mealDao.insertMealName(new MealNameSkeleton(
                             meal.id(),
                             name
                     ));
@@ -83,6 +84,7 @@ public final class MenuJob implements Job {
                 dayEntries.add(new MenuEntrySkeleton.Builder()
                         .date(date)
                         .mealId(meal.id())
+                        .mealNameId(mealName.id())
                         .courseNumber(courseNumber)
                         .build()
                 );

@@ -104,11 +104,9 @@ public final class MealController {
                         TreeMap::new,
                         Collectors.mapping(
                                 menuEntry -> new MenuEntryData(
-                                        new MenuMealData(MealDao.INSTANCE.mealById(menuEntry.mealId())
-                                                .orElseThrow(
-                                                        () -> new RuntimeException("Could not find menu entry meal!")
-                                                )),
-                                        menuEntry.courseNumber()
+                                        menuEntry.mealName(),
+                                        menuEntry.courseNumber(),
+                                        new MenuMealData(menuEntry.meal())
                                 ),
                                 Collectors.toList()
                         )
@@ -142,10 +140,12 @@ public final class MealController {
     }
 
     public record MenuEntryData(
-            @JsonProperty("meal")
-            @NotNull MenuMealData mealData,
+            @JsonProperty("name")
+            @NotNull String mealName,
             @JsonProperty("courseNumber")
-            @Nullable Integer courseNumber
+            @Nullable Integer courseNumber,
+            @JsonProperty("meal")
+            @NotNull MenuMealData mealData
     ) {
     }
 

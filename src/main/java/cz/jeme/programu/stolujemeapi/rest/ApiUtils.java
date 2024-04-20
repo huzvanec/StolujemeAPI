@@ -30,6 +30,7 @@ public final class ApiUtils {
     };
 
     private static final @NotNull ObjectMapper MAPPER = new ObjectMapper();
+    private static final @NotNull String TOKEN_PREFIX = "Bearer ";
     private static final @NotNull ApiException INVALID_AUTHENTICATION = new ApiException(HttpStatus.UNAUTHORIZED, ApiErrorType.AUTHENTICATION_INVALID);
 
     private ApiUtils() {
@@ -68,8 +69,7 @@ public final class ApiUtils {
 
     public static @NotNull Session authenticate() {
         final RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
-        if (attributes == null)
-            throw new RuntimeException("No request attributes are bound to this thread!");
+        if (attributes == null) throw new RuntimeException("No request attributes are bound to this thread!");
 
         final HttpServletRequest servletRequest = ((ServletRequestAttributes) attributes).getRequest();
         String token = servletRequest.getHeader("Authorization");
@@ -78,9 +78,9 @@ public final class ApiUtils {
                     HttpStatus.UNAUTHORIZED,
                     ApiErrorType.MISSING_AUTHENTICATION
             );
-        if (!token.startsWith("Bearer "))
+        if (!token.startsWith(ApiUtils.TOKEN_PREFIX))
             throw ApiUtils.INVALID_AUTHENTICATION;
-        token = token.substring(7);
+        token = token.substring(ApiUtils.TOKEN_PREFIX.length());
         if (token.length() != CryptoUtils.TOKEN_LENGTH_BASE64)
             throw ApiUtils.INVALID_AUTHENTICATION;
         final Session session = SessionDao.INSTANCE.sessionByToken(token)

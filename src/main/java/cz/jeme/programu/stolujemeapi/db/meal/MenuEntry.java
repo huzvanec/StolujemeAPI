@@ -9,15 +9,17 @@ import java.util.Objects;
 
 public class MenuEntry implements Entry {
     private final int id;
-    private final int mealId;
+    private final @NotNull Meal meal;
+    private final @NotNull String mealName;
     private final @NotNull LocalDate date;
     private final @Nullable Integer courseNumber;
 
     private MenuEntry(final @NotNull Builder builder) {
-        this.id = Objects.requireNonNull(builder.id, "id");
-        this.mealId = Objects.requireNonNull(builder.mealId, "mealId");
-        this.date = Objects.requireNonNull(builder.date, "date");
-        this.courseNumber = builder.courseNumber;
+        id = Objects.requireNonNull(builder.id, "id");
+        meal = Objects.requireNonNull(builder.meal, "meal");
+        mealName = Objects.requireNonNull(builder.mealName, "mealName");
+        date = Objects.requireNonNull(builder.date, "date");
+        courseNumber = builder.courseNumber;
     }
 
     public boolean hasCourseNumber() {
@@ -32,8 +34,12 @@ public class MenuEntry implements Entry {
         return date;
     }
 
-    public int mealId() {
-        return mealId;
+    public @NotNull Meal meal() {
+        return meal;
+    }
+
+    public @NotNull String mealName() {
+        return mealName;
     }
 
     @Override
@@ -46,13 +52,18 @@ public class MenuEntry implements Entry {
         if (this == object) return true;
         if (!(object instanceof final MenuEntry menuEntry)) return false;
 
-        return id == menuEntry.id && mealId == menuEntry.mealId && date.equals(menuEntry.date) && Objects.equals(courseNumber, menuEntry.courseNumber);
+        return id == menuEntry.id &&
+               meal.equals(menuEntry.meal) &&
+               mealName.equals(menuEntry.mealName) &&
+               date.equals(menuEntry.date) &&
+               Objects.equals(courseNumber, menuEntry.courseNumber);
     }
 
     @Override
     public int hashCode() {
         int result = id;
-        result = 31 * result + mealId;
+        result = 31 * result + meal.hashCode();
+        result = 31 * result + mealName.hashCode();
         result = 31 * result + date.hashCode();
         result = 31 * result + Objects.hashCode(courseNumber);
         return result;
@@ -62,7 +73,8 @@ public class MenuEntry implements Entry {
     public @NotNull String toString() {
         return "MenuEntry{" +
                "id=" + id +
-               ", mealId=" + mealId +
+               ", meal=" + meal +
+               ", mealName='" + mealName + '\'' +
                ", date=" + date +
                ", courseNumber=" + courseNumber +
                '}';
@@ -70,7 +82,8 @@ public class MenuEntry implements Entry {
 
     static final class Builder implements Entry.Builder<Builder, MenuEntry> {
         private @Nullable Integer id;
-        private @Nullable Integer mealId;
+        private @Nullable Meal meal;
+        private @Nullable String mealName;
         private @Nullable LocalDate date;
         private @Nullable Integer courseNumber;
 
@@ -82,8 +95,8 @@ public class MenuEntry implements Entry {
             return this;
         }
 
-        public @NotNull Builder mealId(final int mealId) {
-            this.mealId = mealId;
+        public @NotNull Builder meal(final @NotNull Meal meal) {
+            this.meal = meal;
             return this;
         }
 
@@ -94,6 +107,11 @@ public class MenuEntry implements Entry {
 
         public @NotNull Builder courseNumber(final @Nullable Integer courseNumber) {
             this.courseNumber = courseNumber;
+            return this;
+        }
+
+        public @NotNull Builder mealName(final @NotNull String mealName) {
+            this.mealName = mealName;
             return this;
         }
 
