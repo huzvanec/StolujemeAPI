@@ -2,11 +2,13 @@ package cz.jeme.programu.stolujemeapi.db.photo;
 
 import cz.jeme.programu.stolujemeapi.db.Dao;
 import cz.jeme.programu.stolujemeapi.db.Database;
-import cz.jeme.programu.stolujemeapi.db.StatementWrapper;
+import cz.jeme.programu.stolujemeapi.sql.ResultWrapper;
+import cz.jeme.programu.stolujemeapi.sql.StatementWrapper;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,7 +19,6 @@ public enum PhotoDao implements Dao {
     INSTANCE;
 
     private final @NotNull Database database = Database.INSTANCE;
-    private final @NotNull StatementWrapper wrapper = StatementWrapper.wrapper();
 
     @Override
     public void init() {
@@ -29,7 +30,7 @@ public enum PhotoDao implements Dao {
                     id_meal MEDIUMINT UNSIGNED NOT NULL,
                     id_user MEDIUMINT UNSIGNED NOT NULL,
                     uuid UUID UNIQUE NOT NULL,
-                    path VARCHAR(300) UNIQUE NOT NULL,
+                    path VARCHAR(1000) UNIQUE NOT NULL,
                     file_size INT UNSIGNED NOT NULL,
                     upload_time DATETIME NOT NULL,
                     CONSTRAINT `fk_photo_meal`
@@ -51,18 +52,17 @@ public enum PhotoDao implements Dao {
                     SELECT id_photo, id_meal, id_user, path, upload_time
                     FROM photos WHERE uuid = ?;
                     """;
-            final ResultSet result = wrapper.wrap(connection.prepareStatement(statementStr))
-                    .setString(uuid.toString())
-                    .unwrap()
+            final ResultWrapper result = StatementWrapper.wrapper(connection.prepareStatement(statementStr))
+                    .setUUID(uuid)
                     .executeQuery();
             if (!result.next()) return Optional.empty();
             return Optional.of(new Photo.Builder()
-                    .id(result.getInt(1))
-                    .mealId(result.getInt(2))
-                    .userId(result.getInt(3))
+                    .id(result.getInt())
+                    .mealId(result.getInt())
+                    .userId(result.getInt())
                     .uuid(uuid)
-                    .file(new File(result.getString(4)))
-                    .uploadedTime(result.getTimestamp(5).toLocalDateTime())
+                    .file(result.getFile())
+                    .uploadedTime(result.getLocalDateTime())
                     .build()
             );
         } catch (final SQLException e) {
@@ -77,24 +77,22 @@ public enum PhotoDao implements Dao {
                     INSERT INTO photos (id_meal, id_user, uuid, path, file_size, upload_time)
                     VALUES (?, ?, ?, ?, ?, ?);
                     """;
-            final LocalDateTime creation = LocalDateTime.now();
-            final PreparedStatement statement = wrapper
-                    .wrap(connection.prepareStatement(statementStr, Statement.RETURN_GENERATED_KEYS))
+            final LocalDateTime creationTime = LocalDateTime.now();
+            final ResultWrapper result = StatementWrapper.wrapper(connection.prepareStatement(statementStr, Statement.RETURN_GENERATED_KEYS))
                     .setInt(skeleton.mealId())
                     .setInt(skeleton.userId())
-                    .setString(skeleton.uuid().toString())
-                    .setString(skeleton.file().getAbsolutePath())
+                    .setUUID(skeleton.uuid())
+                    .setFile(skeleton.file())
                     .setInt((int) skeleton.file().length())
-                    .setTimestamp(Timestamp.valueOf(creation))
-                    .unwrap();
-            statement.execute();
-            final ResultSet result = statement.getGeneratedKeys();
+                    .setLocalDateTime(creationTime)
+                    .executeGenerate();
+
             if (!result.next()) throw new RuntimeException("Id was not returned!");
             return new Photo.Builder()
-                    .id(result.getInt(1))
+                    .id(result.getInt())
                     .mealId(skeleton.mealId())
                     .userId(skeleton.userId())
-                    .uploadedTime(creation)
+                    .uploadedTime(creationTime)
                     .uuid(skeleton.uuid())
                     .file(skeleton.file())
                     .build();
@@ -110,19 +108,19 @@ public enum PhotoDao implements Dao {
                     SELECT id_photo, id_user, uuid, path, upload_time
                     FROM photos WHERE id_meal = ?;
                     """;
-            final ResultSet result = wrapper.wrap(connection.prepareStatement(statementStr))
+            final ResultWrapper result = StatementWrapper.wrapper(connection.prepareStatement(statementStr))
                     .setInt(mealId)
-                    .unwrap()
                     .executeQuery();
+
             final List<Photo> photos = new ArrayList<>();
             while (result.next()) {
                 photos.add(new Photo.Builder()
-                        .id(result.getInt(1))
-                        .userId(result.getInt(2))
+                        .id(result.getInt())
+                        .userId(result.getInt())
                         .mealId(mealId)
-                        .uuid(UUID.fromString(result.getString(3)))
-                        .file(new File(result.getString(4)))
-                        .uploadedTime(result.getTimestamp(5).toLocalDateTime())
+                        .uuid(result.getUUID())
+                        .file(result.getFile())
+                        .uploadedTime(result.getLocalDateTime())
                         .build()
                 );
             }

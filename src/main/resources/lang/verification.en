@@ -1,0 +1,15 @@
+Hi ${NAME}!
+You have registered an account at https://stolu.jeme.cz/ with the following information:
+
+Email: ${EMAIL}
+Username: ${NAME}
+
+If this information is correct and you wish to complete your registration, please click the link below:
+
+https://stolu.jeme.cz/verify?code=${CODE}
+
+Zdar a skibidi,
+Stolujeme
+
+Do not reply to this message, it was generated automatically.
+If you did not request this email, you can ignore it.

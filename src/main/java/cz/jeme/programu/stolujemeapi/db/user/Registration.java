@@ -6,42 +6,54 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
-public record User(
+public record Registration(
         int id,
-        int registrationId,
+        @NotNull LocalDateTime creationTime,
+        @NotNull LocalDateTime expirationTime,
         @NotNull String email,
         @NotNull String name,
-        @NotNull LocalDateTime creationTime,
+        @NotNull Canteen canteen,
         @NotNull String passwordHash,
         @NotNull String passwordSalt,
-        @NotNull Canteen canteen
+        @NotNull String code
 ) implements Entry {
-    private User(final @NotNull Builder builder) {
+    public @NotNull Duration duration() {
+        return Duration.between(creationTime, expirationTime);
+    }
+
+    public boolean expired() {
+        return !expirationTime.isAfter(LocalDateTime.now()); // not using isBefore to exclude equals
+    }
+
+    private Registration(final @NotNull Builder builder) {
         this(
                 Objects.requireNonNull(builder.id, "id"),
-                Objects.requireNonNull(builder.registrationId, "registrationId"),
+                Objects.requireNonNull(builder.creationTime, "creationTime"),
+                Objects.requireNonNull(builder.expirationTime, "expirationTime"),
                 Objects.requireNonNull(builder.email, "email"),
                 Objects.requireNonNull(builder.name, "name"),
-                Objects.requireNonNull(builder.creationTime, "creationTime"),
+                Objects.requireNonNull(builder.canteen, "canteen"),
                 Objects.requireNonNull(builder.passwordHash, "passwordHash"),
                 Objects.requireNonNull(builder.passwordSalt, "passwordSalt"),
-                Objects.requireNonNull(builder.canteen, "canteen")
+                Objects.requireNonNull(builder.code, "code")
         );
     }
 
     @ApiStatus.Internal
-    public static final class Builder implements Entry.Builder<Builder, User> {
+    public static final class Builder implements Entry.Builder<Builder, Registration> {
         private @Nullable Integer id;
-        private @Nullable Integer registrationId;
+        private @Nullable LocalDateTime creationTime;
+        private @Nullable LocalDateTime expirationTime;
         private @Nullable String email;
         private @Nullable String name;
-        private @Nullable LocalDateTime creationTime;
+        private @Nullable Canteen canteen;
         private @Nullable String passwordHash;
         private @Nullable String passwordSalt;
-        private @Nullable Canteen canteen;
+        private @Nullable String code;
 
         @Override
         public @NotNull Builder id(final int id) {
@@ -49,8 +61,13 @@ public record User(
             return this;
         }
 
-        public @NotNull Builder registrationId(final int registrationId) {
-            this.registrationId = registrationId;
+        public @NotNull Builder creationTime(final @Nullable LocalDateTime creationTime) {
+            this.creationTime = creationTime;
+            return this;
+        }
+
+        public @NotNull Builder expirationTime(final @Nullable LocalDateTime expirationTime) {
+            this.expirationTime = expirationTime;
             return this;
         }
 
@@ -64,8 +81,8 @@ public record User(
             return this;
         }
 
-        public @NotNull Builder creationTime(final @Nullable LocalDateTime creationTime) {
-            this.creationTime = creationTime;
+        public @NotNull Builder canteen(final @Nullable Canteen canteen) {
+            this.canteen = canteen;
             return this;
         }
 
@@ -79,14 +96,14 @@ public record User(
             return this;
         }
 
-        public @NotNull Builder canteen(final @Nullable Canteen canteen) {
-            this.canteen = canteen;
+        public @NotNull Builder code(final @Nullable String code) {
+            this.code = code;
             return this;
         }
 
         @Override
-        public @NotNull User build() {
-            return new User(this);
+        public @NotNull Registration build() {
+            return new Registration(this);
         }
     }
 }

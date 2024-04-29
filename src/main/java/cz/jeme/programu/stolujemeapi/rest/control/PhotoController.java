@@ -14,7 +14,7 @@ import cz.jeme.programu.stolujemeapi.db.meal.MealDao;
 import cz.jeme.programu.stolujemeapi.db.photo.Photo;
 import cz.jeme.programu.stolujemeapi.db.photo.PhotoDao;
 import cz.jeme.programu.stolujemeapi.db.photo.PhotoSkeleton;
-import cz.jeme.programu.stolujemeapi.db.session.Session;
+import cz.jeme.programu.stolujemeapi.db.user.Session;
 import cz.jeme.programu.stolujemeapi.error.ApiErrorType;
 import cz.jeme.programu.stolujemeapi.error.InvalidParamException;
 import cz.jeme.programu.stolujemeapi.rest.ApiUtils;

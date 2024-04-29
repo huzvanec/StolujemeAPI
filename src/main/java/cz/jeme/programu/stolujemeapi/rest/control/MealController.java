@@ -1,12 +1,15 @@
 package cz.jeme.programu.stolujemeapi.rest.control;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import cz.jeme.programu.stolujemeapi.Canteen;
+import cz.jeme.programu.stolujemeapi.canteen.Canteen;
 import cz.jeme.programu.stolujemeapi.db.meal.Meal;
 import cz.jeme.programu.stolujemeapi.db.meal.MealDao;
 import cz.jeme.programu.stolujemeapi.db.meal.MenuEntry;
 import cz.jeme.programu.stolujemeapi.db.photo.Photo;
 import cz.jeme.programu.stolujemeapi.db.photo.PhotoDao;
+import cz.jeme.programu.stolujemeapi.db.rating.RatingDao;
+import cz.jeme.programu.stolujemeapi.db.user.Session;
+import cz.jeme.programu.stolujemeapi.db.user.UserDao;
 import cz.jeme.programu.stolujemeapi.error.ApiErrorType;
 import cz.jeme.programu.stolujemeapi.error.InvalidParamException;
 import cz.jeme.programu.stolujemeapi.rest.ApiUtils;
@@ -35,12 +38,7 @@ public final class MealController {
     @ResponseBody
     private @NotNull Response meal(final @NotNull @RequestBody MealRequest request) {
         ApiUtils.authenticate();
-        final UUID uuid;
-        try {
-            uuid = UUID.fromString(ApiUtils.require(request.mealUuid, "mealUuid"));
-        } catch (final IllegalArgumentException e) {
-            throw new InvalidParamException("mealUuid", ApiErrorType.UUID_CONTENTS_INVALID);
-        }
+        final UUID uuid = ApiUtils.parseUuid(request.mealUuid(), "mealUuid");
         final Meal meal = MealDao.INSTANCE.mealByUuid(uuid)
                 .orElseThrow(() -> new InvalidParamException("mealUuid", ApiErrorType.MEAL_UUID_INVALID));
 
@@ -74,16 +72,19 @@ public final class MealController {
             @JsonProperty("canteen")
             @NotNull Canteen canteen,
             @JsonProperty("course")
-            @NotNull Meal.Course course
+            @NotNull Meal.Course course,
+            @JsonProperty("description")
+            @Nullable String description
     ) {
         public MealData(final @NotNull Meal meal) {
-            this(meal.uuid(), meal.canteen(), meal.course());
+            this(meal.uuid(), meal.canteen(), meal.course(), meal.description());
         }
     }
 
     @GetMapping("/menu")
     @ResponseBody
     private @NotNull Response menu(final @NotNull @RequestBody MenuRequest request) {
+        final Session session = ApiUtils.authenticate();
         final LocalDate fromDate = request.fromDate() == null
                 ? LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
                 : parseDate(request.fromDate(), "fromDate");
@@ -95,9 +96,23 @@ public final class MealController {
         if (fromDate.isAfter(toDate))
             throw new InvalidParamException("fromDate", ApiErrorType.DATE_ORDER_INVALID);
 
-        MealDao.INSTANCE.menuEntriesByDates(fromDate, toDate).forEach(System.out::println);
+        final Canteen canteen = UserDao.INSTANCE.userBySession(session).canteen();
 
-        final Map<LocalDate, List<MenuEntryData>> entries = MealDao.INSTANCE.menuEntriesByDates(fromDate, toDate)
+        final Map<Integer, Double> userRatings = RatingDao.INSTANCE.ratingsByDates(
+                fromDate,
+                toDate,
+                RatingDao.RatingRequestType.USER,
+                session.userId()
+        );
+
+        final Map<Integer, Double> othersRatings = RatingDao.INSTANCE.ratingsByDates(
+                fromDate,
+                toDate,
+                RatingDao.RatingRequestType.OTHERS,
+                session.userId()
+        );
+
+        final Map<LocalDate, List<MenuEntryData>> entries = MealDao.INSTANCE.menuEntriesByDates(canteen, fromDate, toDate)
                 .stream()
                 .collect(Collectors.groupingBy(
                         MenuEntry::date,
@@ -106,15 +121,21 @@ public final class MealController {
                                 menuEntry -> new MenuEntryData(
                                         menuEntry.mealName(),
                                         menuEntry.courseNumber(),
-                                        new MenuMealData(menuEntry.meal())
+                                        menuEntry.uuid(),
+                                        new MenuMealData(
+                                                menuEntry.meal(),
+                                                new MenuMealRatingData(
+                                                        userRatings.get(menuEntry.meal().id()),
+                                                        othersRatings.get(menuEntry.meal().id())
+                                                )
+                                        )
                                 ),
                                 Collectors.toList()
                         )
                 ));
-
         entries.values().forEach(list -> list.sort(MenuEntryDataComparator.INSTANCE));
 
-        return new MenuResponse(entries);
+        return new MenuResponse(canteen.name(), entries);
     }
 
     private @NotNull LocalDate parseDate(final @NotNull String dateStr, final @NotNull String paramName) {
@@ -134,6 +155,8 @@ public final class MealController {
     }
 
     public record MenuResponse(
+            @JsonProperty("canteen")
+            @NotNull String canteen,
             @JsonProperty("menu")
             @NotNull Map<LocalDate, List<MenuEntryData>> menuEntries
     ) implements Response {
@@ -144,8 +167,33 @@ public final class MealController {
             @NotNull String mealName,
             @JsonProperty("courseNumber")
             @Nullable Integer courseNumber,
+            @JsonProperty("uuid")
+            @NotNull UUID uuid,
             @JsonProperty("meal")
             @NotNull MenuMealData mealData
+    ) {
+    }
+
+    public record MenuMealData(
+            @JsonProperty("uuid")
+            @NotNull UUID uuid,
+            @JsonProperty("course")
+            @NotNull Meal.Course course,
+            @JsonProperty("ratings")
+            @NotNull MenuMealRatingData ratingData,
+            @JsonProperty("description")
+            @Nullable String description
+    ) {
+        public MenuMealData(final @NotNull Meal meal, final @NotNull MenuMealRatingData ratingData) {
+            this(meal.uuid(), meal.course(), ratingData, meal.description());
+        }
+    }
+
+    public record MenuMealRatingData(
+            @JsonProperty("user")
+            @Nullable Double userRating,
+            @JsonProperty("others")
+            @Nullable Double othersRating
     ) {
     }
 
@@ -184,17 +232,6 @@ public final class MealController {
             }
 
             return 0;
-        }
-    }
-
-    public record MenuMealData(
-            @JsonProperty("uuid")
-            @NotNull UUID uuid,
-            @JsonProperty("course")
-            @NotNull Meal.Course course
-    ) {
-        public MenuMealData(final @NotNull Meal meal) {
-            this(meal.uuid(), meal.course());
         }
     }
 }

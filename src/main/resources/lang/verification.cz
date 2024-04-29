@@ -1,0 +1,15 @@
+Ahoj ${NAME}!
+Zaregistroval/a jsi si účet na https://stolu.jeme.cz/ s následujícími údaji:
+
+E-mail: ${EMAIL}
+Uživatelské jméno: ${NAME}
+
+Pokud jsou tyto informace správné a přeješ si dokončit registraci, klikni na odkaz níže:
+
+https://stolu.jeme.cz/verify?code=${CODE}
+
+Zdar a skibidi,
+Stolujeme
+
+Na tuto zprávu neodpovídej, byla vygenerována automaticky.
+Pokud jsi si tento e-mail nevyžádal/a, můžeš jej ignorovat.

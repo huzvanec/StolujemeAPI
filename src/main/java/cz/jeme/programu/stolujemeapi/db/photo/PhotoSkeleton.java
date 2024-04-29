@@ -8,60 +8,19 @@ import java.io.File;
 import java.util.Objects;
 import java.util.UUID;
 
-public final class PhotoSkeleton implements Skeleton {
-    private final int mealId;
-    private final int userId;
-    private final @NotNull UUID uuid;
-    private final @NotNull File file;
-
+public record PhotoSkeleton(
+        int mealId,
+        int userId,
+        @NotNull UUID uuid,
+        @NotNull File file
+) implements Skeleton {
     private PhotoSkeleton(final @NotNull Builder builder) {
-        mealId = Objects.requireNonNull(builder.mealId, "mealId");
-        userId = Objects.requireNonNull(builder.userId, "userId");
-        uuid = builder.uuid;
-        file = Objects.requireNonNull(builder.file, "file");
-    }
-
-    public int mealId() {
-        return mealId;
-    }
-
-    public int userId() {
-        return userId;
-    }
-
-    public @NotNull UUID uuid() {
-        return uuid;
-    }
-
-    public @NotNull File file() {
-        return file;
-    }
-
-    @Override
-    public boolean equals(final @Nullable Object object) {
-        if (this == object) return true;
-        if (!(object instanceof final PhotoSkeleton that)) return false;
-
-        return mealId == that.mealId && userId == that.userId && uuid.equals(that.uuid) && file.equals(that.file);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = mealId;
-        result = 31 * result + userId;
-        result = 31 * result + uuid.hashCode();
-        result = 31 * result + file.hashCode();
-        return result;
-    }
-
-    @Override
-    public @NotNull String toString() {
-        return "PhotoSkeleton{" +
-               "mealId=" + mealId +
-               ", userId=" + userId +
-               ", uuid=" + uuid +
-               ", file=" + file.getAbsolutePath() +
-               '}';
+        this(
+                Objects.requireNonNull(builder.mealId, "mealId"),
+                Objects.requireNonNull(builder.userId, "userId"),
+                builder.uuid,
+                Objects.requireNonNull(builder.file, "file")
+        );
     }
 
     public static final class Builder implements Skeleton.Builder<Builder, PhotoSkeleton> {

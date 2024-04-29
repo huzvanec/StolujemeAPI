@@ -6,73 +6,29 @@ import org.jetbrains.annotations.Nullable;
 
 import java.time.LocalDate;
 import java.util.Objects;
+import java.util.UUID;
 
-public class MenuEntrySkeleton implements Skeleton {
-    private final int mealId;
-    private final int mealNameId;
-    private final @NotNull LocalDate date;
-    private final @Nullable Integer courseNumber;
-
+public record MenuEntrySkeleton(
+        int mealId,
+        int mealNameId,
+        @NotNull UUID uuid,
+        @NotNull LocalDate date,
+        @Nullable Integer courseNumber
+) implements Skeleton {
     private MenuEntrySkeleton(final @NotNull Builder builder) {
-        this.mealId = Objects.requireNonNull(builder.mealId, "mealId");
-        this.mealNameId = Objects.requireNonNull(builder.mealNameId, "mealNameId");
-        this.date = Objects.requireNonNull(builder.date, "date");
-        this.courseNumber = builder.courseNumber;
-    }
-
-    public int mealId() {
-        return mealId;
-    }
-
-    public int mealNameId() {
-        return mealNameId;
-    }
-
-    public @NotNull LocalDate date() {
-        return date;
-    }
-
-    public boolean hasCourseNumber() {
-        return courseNumber != null;
-    }
-
-    public @Nullable Integer courseNumber() {
-        return courseNumber;
-    }
-
-    @Override
-    public final boolean equals(final @Nullable Object object) {
-        if (this == object) return true;
-        if (!(object instanceof final MenuEntrySkeleton that)) return false;
-
-        return mealId == that.mealId &&
-               mealNameId == that.mealNameId &&
-               date.equals(that.date) &&
-               Objects.equals(courseNumber, that.courseNumber);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = mealId;
-        result = 31 * result + mealNameId;
-        result = 31 * result + date.hashCode();
-        result = 31 * result + Objects.hashCode(courseNumber);
-        return result;
-    }
-
-    @Override
-    public @NotNull String toString() {
-        return "MenuEntrySkeleton{" +
-               "mealId=" + mealId +
-               ", mealNameId=" + mealNameId +
-               ", date=" + date +
-               ", courseNumber=" + courseNumber +
-               '}';
+        this(
+                Objects.requireNonNull(builder.mealId, "mealId"),
+                Objects.requireNonNull(builder.mealNameId, "mealNameId"),
+                builder.uuid,
+                Objects.requireNonNull(builder.date, "date"),
+                builder.courseNumber
+        );
     }
 
     public static final class Builder implements Skeleton.Builder<Builder, MenuEntrySkeleton> {
         private @Nullable Integer mealId;
         private @Nullable Integer mealNameId;
+        private @NotNull UUID uuid = UUID.randomUUID();
         private @Nullable LocalDate date;
         private @Nullable Integer courseNumber;
 
@@ -83,6 +39,11 @@ public class MenuEntrySkeleton implements Skeleton {
 
         public @NotNull Builder mealNameId(final int mealNameId) {
             this.mealNameId = mealNameId;
+            return this;
+        }
+
+        public @NotNull Builder uuid(final @NotNull UUID uuid) {
+            this.uuid = uuid;
             return this;
         }
 

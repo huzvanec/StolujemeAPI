@@ -1,11 +1,10 @@
 package cz.jeme.programu.stolujemeapi.rest.control;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import cz.jeme.programu.stolujemeapi.Canteen;
+import cz.jeme.programu.stolujemeapi.canteen.Canteen;
+import cz.jeme.programu.stolujemeapi.Lang;
 import cz.jeme.programu.stolujemeapi.db.CryptoUtils;
-import cz.jeme.programu.stolujemeapi.db.user.User;
-import cz.jeme.programu.stolujemeapi.db.user.UserDao;
-import cz.jeme.programu.stolujemeapi.db.user.UserSkeleton;
+import cz.jeme.programu.stolujemeapi.db.user.*;
 import cz.jeme.programu.stolujemeapi.error.ApiErrorType;
 import cz.jeme.programu.stolujemeapi.error.InvalidParamException;
 import cz.jeme.programu.stolujemeapi.rest.ApiUtils;
@@ -14,12 +13,19 @@ import cz.jeme.programu.stolujemeapi.rest.Response;
 import org.apache.commons.validator.routines.EmailValidator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.security.spec.InvalidKeySpecException;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 @RestController
 public final class UserController {
@@ -31,74 +37,132 @@ public final class UserController {
     public static final int PASSWORD_LENGTH_MAX = 100;
     public static final int EMAIL_LENGTH_MAX = 250;
 
-    private UserController() {
+
+    public static final @NotNull Duration REGISTRATION_DURATION = Duration.ofMinutes(15);
+
+    public static final @NotNull String CREDENTIALS_PLACEHOLDER = "#credentials";
+    public static final @NotNull Duration SESSION_DURATION = Duration.ofDays(30);
+    private static final @NotNull InvalidParamException INVALID_CREDENTIALS = new InvalidParamException(UserController.CREDENTIALS_PLACEHOLDER, ApiErrorType.INVALID_CREDENTIALS);
+
+    private final @NotNull UserDao userDao = UserDao.INSTANCE;
+    private final @NotNull String stolujemeEmail = Objects.requireNonNull(System.getenv("EMAIL_USERNAME"), "ENV: EMAIL_USERNAME");
+    private final @NotNull JavaMailSender emailSender;
+
+    @Autowired
+    private UserController(final @NotNull JavaMailSender emailSender) {
+        this.emailSender = emailSender;
     }
 
     @PostMapping("/register")
     @ResponseBody
     private @NotNull Response register(final @NotNull @RequestBody RegisterRequest request) {
-        final String name = ApiUtils.validate(
-                request.name(),
-                "name",
-                this::nameValid
-        );
-        final String email = ApiUtils.validate(
-                request.email(),
-                "email",
-                this::emailValid
-        );
         final String password = ApiUtils.validate(
                 request.password(),
                 "password",
-                this::passwordValid
+                psw -> {
+                    final int length = psw.length();
+                    if (length < UserController.PASSWORD_LENGTH_MIN ||
+                        length > UserController.PASSWORD_LENGTH_MAX)
+                        return ApiErrorType.PASSWORD_LENGTH_INVALID;
+                    return ApiErrorType.OK;
+                }
         );
 
-        // TODO
-        final Canteen canteen = Canteen.CESKOLIPSKA;
-        if (!email.endsWith("@ceskolipska.cz"))
-            throw new InvalidParamException("email", ApiErrorType.CESKOLIPSKA_BETA);
-
-        final String salt = CryptoUtils.genSalt();
-        final String hash;
+        final Lang language;
         try {
-            hash = CryptoUtils.hash(password, salt);
-        } catch (final InvalidKeySpecException e) {
-            throw new RuntimeException("Could not hash password!", e);
+            language = request.language() == null
+                    ? Lang.EN // language default fallback to english
+                    : Lang.valueOf(request.language().toUpperCase());
+        } catch (final IllegalArgumentException e) {
+            throw new InvalidParamException("language", ApiErrorType.LANGUAGE_INVALID);
         }
 
-        UserDao.INSTANCE.insertUser(new UserSkeleton.Builder()
+        final String email = ApiUtils.validate(
+                request.email(),
+                "email",
+                mail -> {
+                    if (mail.length() > UserController.EMAIL_LENGTH_MAX)
+                        return ApiErrorType.EMAIL_LENGTH_INVALID;
+                    if (!EmailValidator.getInstance().isValid(mail))
+                        return ApiErrorType.EMAIL_CONTENTS_INVALID;
+                    if (userDao.existsUserEmail(mail)) // a verified user with this email exists
+                        return ApiErrorType.EMAIL_NOT_UNIQUE;
+                    return ApiErrorType.OK;
+                }
+        );
+
+        final Canteen canteen;
+        try {
+            canteen = Canteen.fromEmail(email);
+        } catch (final IllegalArgumentException e) {
+            throw new InvalidParamException("email", ApiErrorType.EMAIL_CANTEEN_INVALID);
+        }
+
+        final AtomicReference<Optional<Registration>> atomicReg = new AtomicReference<>();
+
+        final String name = ApiUtils.validate(
+                request.name(),
+                "name",
+                nme -> {
+                    final int length = nme.length();
+                    if (length < UserController.NAME_LENGTH_MIN ||
+                        length > UserController.NAME_LENGTH_MAX)
+                        return ApiErrorType.NAME_LENGTH_INVALID;
+                    if (!nme.matches(UserController.NAME_REGEX)) return ApiErrorType.NAME_CONTENTS_INVALID;
+                    if (userDao.existsUserName(nme)) // a verified user with this name exists
+                        return ApiErrorType.NAME_NOT_UNIQUE;
+
+                    final Optional<Registration> oReg = userDao.activeRegistrationByEmailAndName(email, nme);
+                    atomicReg.set(oReg);
+                    if (oReg.isEmpty()) // no active registration with this email and name exists
+                        return ApiErrorType.OK;
+                    final Registration registration = oReg.get();
+                    if (CryptoUtils.validate(password, registration.passwordHash(), registration.passwordSalt())) {
+                        // the email, name and password all match = this is a verification resend request
+                        return ApiErrorType.OK;
+                    }
+                    // the password does not match the ongoing verification, reserve it until the verification expires
+                    return ApiErrorType.NAME_NOT_UNIQUE;
+                }
+        );
+
+        // use existing salt and hash if an active verification exists
+        final Optional<Registration> oReg = atomicReg.get();
+        final String salt = oReg
+                .map(Registration::passwordSalt)
+                .orElse(CryptoUtils.genSalt());
+        final String hash = oReg
+                .map(Registration::passwordHash)
+                .orElse(CryptoUtils.hash(password, salt));
+
+        final String code = CryptoUtils.genVerification();
+
+        // create registration
+        final Registration registration = userDao.insertRegistration(new RegistrationSkeleton.Builder()
                 .email(email)
                 .name(name)
                 .canteen(canteen)
                 .passwordHash(hash)
                 .passwordSalt(salt)
+                .code(code)
+                .duration(UserController.REGISTRATION_DURATION)
                 .build()
         );
 
-        return ApiUtils.emptyResponse();
-    }
+        // send email
+        final SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom("Stolujeme <%s>".formatted(stolujemeEmail));
+        message.setTo(email);
+        message.setSubject(language.verificationSubject());
+        message.setText(language.verification()
+                .replace("${EMAIL}", email)
+                .replace("${NAME}", name)
+                .replace("${CODE}", code)
+        );
+        // TODO
+        emailSender.send(message);
 
-    public @NotNull ApiErrorType nameValid(final @NotNull String name) {
-        final int length = name.length();
-        if (length < UserController.NAME_LENGTH_MIN || length > UserController.NAME_LENGTH_MAX)
-            return ApiErrorType.NAME_LENGTH_INVALID;
-        if (!name.matches(UserController.NAME_REGEX)) return ApiErrorType.NAME_CONTENTS_INVALID;
-        if (UserDao.INSTANCE.existsUserName(name)) return ApiErrorType.NAME_NOT_UNIQUE;
-        return ApiErrorType.OK;
-    }
-
-    public @NotNull ApiErrorType passwordValid(final @NotNull String password) {
-        final int length = password.length();
-        if (length < UserController.PASSWORD_LENGTH_MIN || length > UserController.PASSWORD_LENGTH_MAX)
-            return ApiErrorType.PASSWORD_LENGTH_INVALID;
-        return ApiErrorType.OK;
-    }
-
-    public @NotNull ApiErrorType emailValid(final @NotNull String email) {
-        if (email.length() > UserController.EMAIL_LENGTH_MAX) return ApiErrorType.EMAIL_LENGTH_INVALID;
-        if (!EmailValidator.getInstance().isValid(email)) return ApiErrorType.EMAIL_CONTENTS_INVALID;
-        if (UserDao.INSTANCE.existsUserEmail(email)) return ApiErrorType.EMAIL_NOT_UNIQUE;
-        return ApiErrorType.OK;
+        return new RegisterResponse(new RegistrationData(registration));
     }
 
     public record RegisterRequest(
@@ -109,8 +173,95 @@ public final class UserController {
             @Nullable String name,
 
             @JsonProperty("password")
+            @Nullable String password,
+
+            @JsonProperty("language")
+            @Nullable String language
+    ) implements Request {
+    }
+
+    public record RegisterResponse(
+            @JsonProperty("registration")
+            @NotNull RegistrationData registrationData
+    ) implements Response {
+    }
+
+    @PostMapping("/verify")
+    @ResponseBody
+    private @NotNull Response verify(final @NotNull @RequestBody VerifyRequest request) {
+        final String code = ApiUtils.require(request.code(), "code");
+
+
+        final Registration verification = userDao.registrationByCode(code)
+                .orElseThrow(() -> new InvalidParamException("code", ApiErrorType.VERIFICATION_CODE_INVALID));
+
+        if (verification.expired())
+            throw new InvalidParamException("code", ApiErrorType.VERIFICATION_EXPIRED);
+
+        userDao.register(verification);
+        return ApiUtils.emptyResponse();
+    }
+
+    public record VerifyRequest(
+            @JsonProperty("code")
+            @Nullable String code
+    ) implements Request {
+    }
+
+    @PostMapping("/log-in")
+    @ResponseBody
+    private @NotNull Response logIn(final @NotNull @RequestBody LoginRequest request) {
+        final String email = ApiUtils.require(
+                request.email(),
+                "email"
+        );
+
+        final String password = ApiUtils.require(
+                request.password(),
+                "password"
+        );
+
+        final User user = userDao.userByEmail(email)
+                .orElseThrow(() -> UserController.INVALID_CREDENTIALS);
+
+        if (!CryptoUtils.validate(password, user.passwordHash(), user.passwordSalt()))
+            throw UserController.INVALID_CREDENTIALS;
+
+        final String token = CryptoUtils.genSession();
+
+        final Session session = userDao.insertSession(
+                new SessionSkeleton.Builder()
+                        .userId(user.id())
+                        .duration(UserController.SESSION_DURATION)
+                        .token(token)
+                        .build()
+        );
+
+        return new LoginResponse(new SessionData(session));
+    }
+
+    public record LoginRequest(
+            @JsonProperty("email")
+            @Nullable String email,
+
+            @JsonProperty("password")
             @Nullable String password
     ) implements Request {
+    }
+
+    public record LoginResponse(
+            @JsonProperty("session")
+            @NotNull SessionData sessionData
+    ) implements Response {
+    }
+
+    @PostMapping("/log-out")
+    @ResponseBody
+    private @NotNull Response logout() {
+        final Session session = ApiUtils.authenticate();
+        if (!userDao.endSession(session.id()))
+            throw new RuntimeException("Session could not be ended!");
+        return ApiUtils.emptyResponse();
     }
 
     public record UserData(
@@ -121,6 +272,30 @@ public final class UserController {
     ) {
         public UserData(final @NotNull User user) {
             this(user.email(), user.name());
+        }
+    }
+
+    public record RegistrationData(
+            @JsonProperty("creationTime")
+            @NotNull LocalDateTime creationTime,
+            @JsonProperty("expirationTime")
+            @NotNull LocalDateTime expirationTime
+    ) {
+        public RegistrationData(final @NotNull Registration registration) {
+            this(registration.creationTime(), registration.expirationTime());
+        }
+    }
+
+    public record SessionData(
+            @JsonProperty("token")
+            @NotNull String token,
+            @JsonProperty("creationTime")
+            @NotNull LocalDateTime creationTime,
+            @JsonProperty("expirationTime")
+            @NotNull LocalDateTime expirationTime
+    ) {
+        public SessionData(final @NotNull Session session) {
+            this(session.token(), session.creationTime(), session.expirationTime());
         }
     }
 }

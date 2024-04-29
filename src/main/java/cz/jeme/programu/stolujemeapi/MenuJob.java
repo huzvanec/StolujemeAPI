@@ -2,12 +2,15 @@ package cz.jeme.programu.stolujemeapi;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
+import cz.jeme.programu.stolujemeapi.canteen.Canteen;
 import cz.jeme.programu.stolujemeapi.db.meal.*;
 import cz.jeme.programu.stolujemeapi.rest.ApiUtils;
 import cz.jeme.programu.stolujemeapi.rest.Request;
 import org.jetbrains.annotations.NotNull;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
@@ -32,11 +35,13 @@ public final class MenuJob implements Job {
 
     private final @NotNull RestTemplate template = new RestTemplate();
     private final @NotNull MealDao mealDao = MealDao.INSTANCE;
+    private final @NotNull Logger logger = LoggerFactory.getLogger(MenuJob.class);
 
     @Override
     public void execute(final @NotNull JobExecutionContext context) {
-        for (final Canteen canteen : Canteen.values()) {
-            Stolujeme.logger().info("Requesting menu for \"%s\"".formatted(canteen.toString()));
+        logger.info("Menu job started");
+        for (final Canteen canteen : Canteen.canteens()) {
+            logger.info("Getting menu data for {}", canteen);
             final String result = Objects.requireNonNull(template.postForObject(
                     MenuJob.URL,
                     ApiUtils.jsonToString(new MenuRequest(canteen.number())),
@@ -48,19 +53,21 @@ public final class MenuJob implements Job {
 
     private void processMenu(final @NotNull Canteen canteen, final @NotNull JsonNode tables) {
         final List<MenuEntrySkeleton> dayEntries = new ArrayList<>();
+        final LocalDate today = LocalDate.now();
         for (final JsonNode day : tables) {
             dayEntries.clear();
             final LocalDate date = LocalDate.parse(
                     day.get(0).get("datum").asText(),
                     MenuJob.DATE_FORMATTER
             );
+            if (date.isBefore(today)) continue;
             for (final JsonNode mealData : day) {
                 final String name = mealData.get("nazev").asText();
                 if (!canteen.mealValid(mealData))
                     continue; // the canteen has dementia and this meal is just a placeholder
 
                 final String type = mealData.get("druh").asText();
-                final Meal.Course course = canteen.course(type);
+                final Meal.Course course = canteen.translateCourse(type);
                 final Integer courseNumber = course == Meal.Course.MAIN ? Integer.parseInt(type) : null;
                 // get meal
                 final Meal meal;

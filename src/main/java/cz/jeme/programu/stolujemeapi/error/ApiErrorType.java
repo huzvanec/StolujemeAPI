@@ -38,12 +38,14 @@ public enum ApiErrorType {
     MEAL_UUID_INVALID("this meal does not exist"),
     PHOTO_CONTENTS_INVALID("an error occurred while trying to process the photo"),
     PHOTO_UUID_INVALID("this photo does not exist"),
-    CESKOLIPSKA_BETA("stolujeme is currently in development and is only available to users from ceskolipska.cz"),
+    EMAIL_CANTEEN_INVALID("stolujeme is currently in development and is only available to users from certain canteens"),
     MISSING_AUTHENTICATION("Missing authentication (bearer token)"),
     AUTHENTICATION_INVALID("Invalid authentication"),
-    RATING_INVALID("ratings must be between 0 and 10"),
+    RATING_INVALID("ratings must be between 1 and 10"),
     DATE_CONTENTS_INVALID("dates must be in format yyyy-MM-dd"),
-    DATE_ORDER_INVALID("dates are in an incorrect order");
+    DATE_ORDER_INVALID("dates are in an incorrect order"),
+    LANGUAGE_INVALID("this language does not exist"),
+    MENU_UUID_INVALID("this menu does not exist");
 
     private final @Nullable String message;
 

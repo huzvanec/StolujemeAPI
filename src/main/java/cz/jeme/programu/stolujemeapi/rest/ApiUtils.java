@@ -4,8 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import cz.jeme.programu.stolujemeapi.db.CryptoUtils;
-import cz.jeme.programu.stolujemeapi.db.session.Session;
-import cz.jeme.programu.stolujemeapi.db.session.SessionDao;
+import cz.jeme.programu.stolujemeapi.db.user.Session;
+import cz.jeme.programu.stolujemeapi.db.user.UserDao;
 import cz.jeme.programu.stolujemeapi.error.ApiErrorType;
 import cz.jeme.programu.stolujemeapi.error.ApiException;
 import cz.jeme.programu.stolujemeapi.error.InvalidParamException;
@@ -69,7 +69,8 @@ public final class ApiUtils {
 
     public static @NotNull Session authenticate() {
         final RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
-        if (attributes == null) throw new RuntimeException("No request attributes are bound to this thread!");
+        if (attributes == null)
+            throw new RuntimeException("No request attributes are bound to this thread!");
 
         final HttpServletRequest servletRequest = ((ServletRequestAttributes) attributes).getRequest();
         String token = servletRequest.getHeader("Authorization");
@@ -81,9 +82,9 @@ public final class ApiUtils {
         if (!token.startsWith(ApiUtils.TOKEN_PREFIX))
             throw ApiUtils.INVALID_AUTHENTICATION;
         token = token.substring(ApiUtils.TOKEN_PREFIX.length());
-        if (token.length() != CryptoUtils.TOKEN_LENGTH_BASE64)
+        if (token.length() != CryptoUtils.SESSION_LENGTH_BASE64)
             throw ApiUtils.INVALID_AUTHENTICATION;
-        final Session session = SessionDao.INSTANCE.sessionByToken(token)
+        final Session session = UserDao.INSTANCE.sessionByToken(token)
                 .orElseThrow(() -> ApiUtils.INVALID_AUTHENTICATION);
         if (session.expired()) throw ApiUtils.INVALID_AUTHENTICATION;
         return session;

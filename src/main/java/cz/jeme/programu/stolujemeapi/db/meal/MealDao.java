@@ -1,13 +1,15 @@
 package cz.jeme.programu.stolujemeapi.db.meal;
 
-import cz.jeme.programu.stolujemeapi.Canteen;
+import cz.jeme.programu.stolujemeapi.canteen.Canteen;
 import cz.jeme.programu.stolujemeapi.db.Dao;
 import cz.jeme.programu.stolujemeapi.db.Database;
-import cz.jeme.programu.stolujemeapi.db.StatementWrapper;
+import cz.jeme.programu.stolujemeapi.sql.ResultWrapper;
+import cz.jeme.programu.stolujemeapi.sql.StatementWrapper;
 import org.jetbrains.annotations.NotNull;
 
-import java.sql.Date;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.LocalDate;
 import java.util.*;
 
@@ -15,7 +17,6 @@ public enum MealDao implements Dao {
     INSTANCE;
 
     private final @NotNull Database database = Database.INSTANCE;
-    private final @NotNull StatementWrapper wrapper = StatementWrapper.wrapper();
 
     @Override
     public void init() {
@@ -25,8 +26,9 @@ public enum MealDao implements Dao {
                     CREATE TABLE IF NOT EXISTS meals (
                     id_meal MEDIUMINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                     uuid UUID UNIQUE NOT NULL,
-                    canteen VARCHAR(25) NOT NULL,
-                    course VARCHAR(25) NOT NULL
+                    canteen VARCHAR(30) NOT NULL,
+                    course VARCHAR(30) NOT NULL,
+                    description VARCHAR(1000) NULL DEFAULT NULL
                     );
                     """;
             connection.prepareStatement(mealsStatementStr).execute();
@@ -35,9 +37,8 @@ public enum MealDao implements Dao {
                     CREATE TABLE IF NOT EXISTS meal_names (
                     id_meal_name MEDIUMINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                     id_meal MEDIUMINT UNSIGNED NOT NULL,
-                    name VARCHAR(250) NOT NULL UNIQUE,
-                    CONSTRAINT `fk_meal_name_meal`
-                        FOREIGN KEY (id_meal) REFERENCES meals (id_meal)
+                    FOREIGN KEY (id_meal) REFERENCES meals (id_meal),
+                    name VARCHAR(500) NOT NULL UNIQUE
                     );
                     """;
             connection.prepareStatement(mealNamesStatementStr).execute();
@@ -46,13 +47,13 @@ public enum MealDao implements Dao {
                     CREATE TABLE IF NOT EXISTS menu (
                     id_menu MEDIUMINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                     id_meal MEDIUMINT UNSIGNED NOT NULL,
+                    FOREIGN KEY (id_meal) REFERENCES meals (id_meal),
                     id_meal_name MEDIUMINT UNSIGNED NOT NULL,
+                    FOREIGN KEY (id_meal_name) REFERENCES meal_names (id_meal_name),
+                    uuid UUID UNIQUE NOT NULL,
                     date DATE NOT NULL,
-                    course_number TINYINT,
-                    CONSTRAINT `fk_menu_meal`
-                        FOREIGN KEY (id_meal) REFERENCES meals (id_meal),
-                    CONSTRAINT `fk_menu_meal_name`
-                        FOREIGN KEY (id_meal_name) REFERENCES meal_names (id_meal_name)
+                    course_number TINYINT NULL DEFAULT NULL,
+                    CHECK (course_number >= 1)
                     );
                     """;
             connection.prepareStatement(menuStatementStr).execute();
@@ -67,19 +68,19 @@ public enum MealDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
-                    SELECT uuid, canteen, course
+                    SELECT uuid, canteen, course, description
                     FROM meals WHERE id_meal = ?;
                     """;
-            final ResultSet result = wrapper.wrap(connection.prepareStatement(statementStr))
+            final ResultWrapper result = StatementWrapper.wrapper(connection.prepareStatement(statementStr))
                     .setInt(id)
-                    .unwrap()
                     .executeQuery();
             if (!result.next()) return Optional.empty();
             return Optional.of(new Meal.Builder()
                     .id(id)
-                    .uuid(UUID.fromString(result.getString(1)))
-                    .canteen(Canteen.valueOf(result.getString(2)))
-                    .course(Meal.Course.valueOf(result.getString(3)))
+                    .uuid(result.getUUID())
+                    .canteen(result.getCanteen())
+                    .course(result.getCourse())
+                    .description(result.getString())
                     .build()
             );
         } catch (final SQLException e) {
@@ -91,39 +92,23 @@ public enum MealDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
-                    SELECT id_meal, canteen, course
+                    SELECT id_meal, canteen, course, description
                     FROM meals WHERE uuid = ?;
                     """;
-            final ResultSet result = wrapper.wrap(connection.prepareStatement(statementStr))
-                    .setString(uuid.toString())
-                    .unwrap()
+            final ResultWrapper result = StatementWrapper.wrapper(connection.prepareStatement(statementStr))
+                    .setUUID(uuid)
                     .executeQuery();
             if (!result.next()) return Optional.empty();
             return Optional.of(new Meal.Builder()
-                    .id(result.getInt(1))
+                    .id(result.getInt())
                     .uuid(uuid)
-                    .canteen(Canteen.valueOf(result.getString(2)))
-                    .course(Meal.Course.valueOf(result.getString(3)))
+                    .canteen(result.getCanteen())
+                    .course(result.getCourse())
+                    .description(result.getString())
                     .build()
             );
         } catch (final SQLException e) {
             throw new RuntimeException("Could not find meal!", e);
-        }
-    }
-
-    public boolean existsMealId(final int id) {
-        try (final Connection connection = database.connection()) {
-            // language=mariadb
-            final String statementStr = """
-                    SELECT 1 FROM meals WHERE id_meal = ?;
-                    """;
-            return wrapper.wrap(connection.prepareStatement(statementStr))
-                    .setInt(id)
-                    .unwrap()
-                    .executeQuery()
-                    .next();
-        } catch (final SQLException e) {
-            throw new RuntimeException("Could search for meal!", e);
         }
     }
 
@@ -132,83 +117,68 @@ public enum MealDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
-                    INSERT INTO meals (uuid, canteen, course)
-                    VALUES (?, ?, ?);
+                    INSERT INTO meals (uuid, canteen, course, description)
+                    VALUES (?, ?, ?, ?);
                     """;
-            final PreparedStatement statement = wrapper
-                    .wrap(connection.prepareStatement(statementStr, Statement.RETURN_GENERATED_KEYS))
-                    .setString(skeleton.uuid().toString())
-                    .setString(skeleton.canteen().toString())
-                    .setString(skeleton.course().toString())
-                    .unwrap();
-            statement.execute();
-            final ResultSet result = statement.getGeneratedKeys();
+            final ResultWrapper result = StatementWrapper.wrapper(connection.prepareStatement(statementStr, Statement.RETURN_GENERATED_KEYS))
+                    .setUUID(skeleton.uuid())
+                    .setCanteen(skeleton.canteen())
+                    .setCourse(skeleton.course())
+                    .setNullString(skeleton.description())
+                    .executeGenerate();
             if (!result.next()) throw new RuntimeException("Id was not returned!");
             return new Meal.Builder()
-                    .id(result.getInt(1))
+                    .id(result.getInt())
                     .uuid(skeleton.uuid())
                     .course(skeleton.course())
                     .canteen(skeleton.canteen())
+                    .description(skeleton.description())
                     .build();
         } catch (final SQLException e) {
             throw new RuntimeException("Could not create meal!", e);
         }
     }
 
-    public boolean existsMealUuid(final @NotNull UUID uuid) {
-        try (final Connection connection = database.connection()) {
-            // language=mariadb
-            final String statementStr = """
-                    SELECT 1 FROM meals WHERE uuid = ?;
-                    """;
-            return wrapper.wrap(connection.prepareStatement(statementStr))
-                    .setString(uuid.toString())
-                    .unwrap()
-                    .executeQuery()
-                    .next();
-        } catch (final SQLException e) {
-            throw new RuntimeException("Could search for meal!", e);
-        }
-    }
-
     // MENU ENTRY
 
-    public @NotNull List<MenuEntry> menuEntriesByDates(final @NotNull LocalDate fromDate,
+    public @NotNull List<MenuEntry> menuEntriesByDates(final @NotNull Canteen canteen,
+                                                       final @NotNull LocalDate fromDate,
                                                        final @NotNull LocalDate toDate) {
         if (fromDate.isAfter(toDate))
             throw new IllegalArgumentException("From date is after to date!");
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
-                    SELECT id_menu, date, course_number,
-                        name,
-                        meals.id_meal, uuid, canteen, course
+                    SELECT menu.id_menu, menu.uuid, menu.date, menu.course_number,
+                           meal_names.name,
+                           meals.id_meal, meals.uuid, meals.canteen,  meals.course, meals.description
                     FROM menu, meal_names, meals
                     WHERE date BETWEEN ? AND ?
+                    AND meals.canteen = ?
                     AND menu.id_meal_name = meal_names.id_meal_name
                     AND menu.id_meal = meals.id_meal
                     ORDER BY date;
                     """;
-            final ResultSet result = wrapper.wrap(connection.prepareStatement(statementStr))
-                    .setDate(Date.valueOf(fromDate))
-                    .setDate(Date.valueOf(toDate))
-                    .unwrap()
+            final ResultWrapper result = StatementWrapper.wrapper(connection.prepareStatement(statementStr))
+                    .setLocalDate(fromDate)
+                    .setLocalDate(toDate)
+                    .setString(canteen.name())
                     .executeQuery();
 
             final List<MenuEntry> menuEntries = new ArrayList<>();
             while (result.next()) {
                 menuEntries.add(new MenuEntry.Builder()
-                        .id(result.getInt(1))
-                        .date(result.getDate(2).toLocalDate())
-                        .courseNumber(result.getObject(3) == null
-                                ? null
-                                : result.getInt(3))
-                        .mealName(result.getString(4))
+                        .id(result.getInt())
+                        .uuid(result.getUUID())
+                        .date(result.getLocalDate())
+                        .courseNumber(result.getNullInteger())
+                        .mealName(result.getString())
                         .meal(new Meal.Builder()
-                                .id(result.getInt(5))
-                                .uuid(UUID.fromString(result.getString(6)))
-                                .canteen(Canteen.valueOf(result.getString(7)))
-                                .course(Meal.Course.valueOf(result.getString(8)))
+                                .id(result.getInt())
+                                .uuid(result.getUUID())
+                                .canteen(result.getCanteen())
+                                .course(result.getCourse())
+                                .description(result.getString())
                                 .build()
                         ).build()
                 );
@@ -222,28 +192,64 @@ public enum MealDao implements Dao {
     public void updateMenuDay(final @NotNull LocalDate date, final @NotNull Collection<MenuEntrySkeleton> entries) {
         try (final Connection connection = database.connection()) {
             connection.setAutoCommit(false);
+            final StatementWrapper wrapper = StatementWrapper.wrapper();
             try {
+                final Set<Integer> deletions = new HashSet<>();
+                // language=mariadb
+                final String deletionsStatementStr = """
+                        SELECT id_menu FROM menu WHERE date = ?;
+                        """;
+                final ResultWrapper deletionsResult = wrapper.wrap(connection.prepareStatement(deletionsStatementStr))
+                        .setLocalDate(date)
+                        .executeQuery();
+
+                while (deletionsResult.next()) deletions.add(deletionsResult.getInt());
+
+                final List<MenuEntrySkeleton> additions = new ArrayList<>();
+                for (final MenuEntrySkeleton skeleton : entries) {
+                    // language=mariadb
+                    final String existenceStatementStr = """
+                            SELECT id_menu FROM menu
+                            WHERE date = ?
+                            AND id_meal = ?
+                            AND id_meal_name = ?
+                            AND IFNULL(course_number, -1) = IFNULL(?, -1); -- null-wise equals
+                            """;
+                    final ResultWrapper existenceResult = wrapper.wrap(connection.prepareStatement(existenceStatementStr))
+                            .setLocalDate(date)
+                            .setInt(skeleton.mealId())
+                            .setInt(skeleton.mealNameId())
+                            .setNullInteger(skeleton.courseNumber())
+                            .executeQuery();
+
+                    if (existenceResult.next()) {
+                        deletions.remove(existenceResult.getInt());
+                    } else {
+                        additions.add(skeleton);
+                    }
+                }
+
                 // language=mariadb
                 final String deleteStatementStr = """
-                        DELETE FROM menu WHERE date = ?;
+                        DELETE FROM menu WHERE id_menu = ?;
                         """;
-                wrapper.wrap(connection.prepareStatement(deleteStatementStr))
-                        .setDate(Date.valueOf(date))
-                        .unwrap()
-                        .execute();
+                for (final int deletion : deletions)
+                    wrapper.wrap(connection.prepareStatement(deleteStatementStr))
+                            .setInt(deletion)
+                            .execute();
 
                 // language=mariadb
                 final String insertStatementStr = """
-                        INSERT INTO menu (id_meal, id_meal_name, date, course_number)
-                        VALUES (?, ?, ?, ?);
+                        INSERT INTO menu (id_meal, id_meal_name, uuid, date, course_number)
+                        VALUES (?, ?, ?, ?, ?);
                         """;
-                for (final MenuEntrySkeleton skeleton : entries) {
+                for (final MenuEntrySkeleton skeleton : additions) {
                     wrapper.wrap(connection.prepareStatement(insertStatementStr))
                             .setInt(skeleton.mealId())
                             .setInt(skeleton.mealNameId())
-                            .setDate(Date.valueOf(date))
-                            .setInteger(skeleton.courseNumber(), Types.NULL)
-                            .unwrap()
+                            .setUUID(skeleton.uuid())
+                            .setLocalDate(date)
+                            .setNullInteger(skeleton.courseNumber())
                             .execute();
                 }
                 connection.commit();
@@ -256,6 +262,42 @@ public enum MealDao implements Dao {
         }
     }
 
+    public @NotNull Optional<MenuEntry> menuEntryByUuid(final @NotNull UUID uuid) {
+        try (final Connection connection = database.connection()) {
+            // language=mariadb
+            final String statementStr = """
+                    SELECT menu.id_menu, menu.date, menu.course_number,
+                           meal_names.name,
+                           meals.id_meal, meals.uuid, meals.canteen,  meals.course, meals.description
+                    FROM menu, meal_names, meals
+                    WHERE menu.uuid = ?
+                    AND menu.id_meal = meals.id_meal
+                    AND menu.id_meal = meal_names.id_meal;
+                    """;
+            final ResultWrapper result = StatementWrapper.wrapper(connection.prepareStatement(statementStr))
+                    .setString(uuid.toString())
+                    .executeQuery();
+            if (!result.next()) return Optional.empty();
+            return Optional.of(new MenuEntry.Builder()
+                    .id(result.getInt())
+                    .uuid(uuid)
+                    .date(result.getLocalDate())
+                    .courseNumber(result.getNullInteger())
+                    .mealName(result.getString())
+                    .meal(new Meal.Builder()
+                            .id(result.getInt())
+                            .uuid(result.getUUID())
+                            .canteen(result.getCanteen())
+                            .course(result.getCourse())
+                            .description(result.getString())
+                            .build())
+                    .build()
+            );
+        } catch (final SQLException e) {
+            throw new RuntimeException("Could not find meal!", e);
+        }
+    }
+
     // MEAL NAME
 
     public boolean existsMealName(final @NotNull String name) {
@@ -264,35 +306,12 @@ public enum MealDao implements Dao {
             final String statementStr = """
                     SELECT 1 FROM meal_names WHERE name = ?;
                     """;
-            return wrapper.wrap(connection.prepareStatement(statementStr))
+            return StatementWrapper.wrapper(connection.prepareStatement(statementStr))
                     .setString(name)
-                    .unwrap()
                     .executeQuery()
                     .next();
         } catch (final SQLException e) {
             throw new RuntimeException("Could search for meal!", e);
-        }
-    }
-
-    public @NotNull Optional<MealName> mealNameById(final int id) {
-        try (final Connection connection = database.connection()) {
-            // language=mariadb
-            final String statementStr = """
-                    SELECT id_meal, name
-                    FROM meal_names WHERE id_meal_name = ?;
-                    """;
-            final ResultSet result = wrapper.wrap(connection.prepareStatement(statementStr))
-                    .setInt(id)
-                    .unwrap()
-                    .executeQuery();
-            if (!result.next()) return Optional.empty();
-            return Optional.of(new MealName(
-                    id,
-                    result.getInt(1),
-                    result.getString(2)
-            ));
-        } catch (final SQLException e) {
-            throw new RuntimeException("Could not find meal!", e);
         }
     }
 
@@ -303,43 +322,17 @@ public enum MealDao implements Dao {
                     SELECT id_meal_name, id_meal
                     FROM meal_names WHERE name = ?;
                     """;
-            final ResultSet result = wrapper.wrap(connection.prepareStatement(statementStr))
+            final ResultWrapper result = StatementWrapper.wrapper(connection.prepareStatement(statementStr))
                     .setString(name)
-                    .unwrap()
                     .executeQuery();
             if (!result.next()) return Optional.empty();
             return Optional.of(new MealName(
-                    result.getInt(1),
-                    result.getInt(2),
+                    result.getInt(),
+                    result.getInt(),
                     name
             ));
         } catch (final SQLException e) {
             throw new RuntimeException("Could not find meal!", e);
-        }
-    }
-
-    public @NotNull List<MealName> mealNamesByMealId(final int id) {
-        try (final Connection connection = database.connection()) {
-            // language=mariadb
-            final String statementStr = """
-                    SELECT id_meal_name, name
-                    FROM meal_names WHERE id_meal = ?;
-                    """;
-            final ResultSet result = wrapper.wrap(connection.prepareStatement(statementStr))
-                    .setInt(id)
-                    .unwrap()
-                    .executeQuery();
-            final List<MealName> names = new ArrayList<>();
-            while (result.next()) {
-                names.add(new MealName(
-                        result.getInt(1),
-                        id,
-                        result.getString(2)
-                ));
-            }
-            return names;
-        } catch (final SQLException e) {
-            throw new RuntimeException("Could not find meal names!", e);
         }
     }
 
@@ -350,15 +343,13 @@ public enum MealDao implements Dao {
                     INSERT INTO meal_names (id_meal, name)
                     VALUES (?, ?);
                     """;
-            wrapper.wrap(connection.prepareStatement(statementStr, Statement.RETURN_GENERATED_KEYS))
+            final ResultWrapper result = StatementWrapper.wrapper(connection.prepareStatement(statementStr, Statement.RETURN_GENERATED_KEYS))
                     .setInt(skeleton.mealId())
-                    .setString(skeleton.name());
-            final PreparedStatement statement = wrapper.unwrap();
-            statement.execute();
-            final ResultSet result = statement.getGeneratedKeys();
+                    .setString(skeleton.name())
+                    .executeGenerate();
             if (!result.next()) throw new RuntimeException("Id was not returned!");
             return new MealName(
-                    result.getInt(1),
+                    result.getInt(),
                     skeleton.mealId(),
                     skeleton.name()
             );

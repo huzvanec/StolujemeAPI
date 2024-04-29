@@ -5,37 +5,41 @@ import cz.jeme.programu.stolujemeapi.db.Skeleton;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Duration;
 import java.util.Objects;
 
-public record UserSkeleton(
-        int verificationId,
+public record RegistrationSkeleton(
         @NotNull String email,
         @NotNull String name,
+        @NotNull Canteen canteen,
         @NotNull String passwordHash,
         @NotNull String passwordSalt,
-        @NotNull Canteen canteen
+        @NotNull String code,
+        @NotNull Duration duration
 ) implements Skeleton {
-    private UserSkeleton(final @NotNull Builder builder) {
+    private RegistrationSkeleton(final @NotNull Builder builder) {
         this(
-                Objects.requireNonNull(builder.verificationId, "registrationId"),
                 Objects.requireNonNull(builder.email, "email"),
                 Objects.requireNonNull(builder.name, "name"),
+                Objects.requireNonNull(builder.canteen, "canteen"),
                 Objects.requireNonNull(builder.passwordHash, "passwordHash"),
                 Objects.requireNonNull(builder.passwordSalt, "passwordSalt"),
-                Objects.requireNonNull(builder.canteen, "canteen")
+                Objects.requireNonNull(builder.code, "code"),
+                Objects.requireNonNull(builder.duration, "duration")
         );
     }
 
-    public static final class Builder implements Skeleton.Builder<Builder, UserSkeleton> {
-        private @Nullable Integer verificationId;
+    public static final class Builder implements Skeleton.Builder<Builder, RegistrationSkeleton> {
+        private @Nullable Duration duration;
         private @Nullable String email;
         private @Nullable String name;
+        private @Nullable Canteen canteen;
         private @Nullable String passwordHash;
         private @Nullable String passwordSalt;
-        private @Nullable Canteen canteen;
+        private @Nullable String code;
 
-        public @NotNull Builder verificationId(final int verificationId) {
-            this.verificationId = verificationId;
+        public @NotNull Builder duration(final @NotNull Duration duration) {
+            this.duration = duration;
             return this;
         }
 
@@ -49,6 +53,11 @@ public record UserSkeleton(
             return this;
         }
 
+        public @NotNull Builder canteen(final @NotNull Canteen canteen) {
+            this.canteen = canteen;
+            return this;
+        }
+
         public @NotNull Builder passwordHash(final @NotNull String passwordHash) {
             this.passwordHash = passwordHash;
             return this;
@@ -59,14 +68,14 @@ public record UserSkeleton(
             return this;
         }
 
-        public @NotNull Builder canteen(final @NotNull Canteen canteen) {
-            this.canteen = canteen;
+        public @NotNull Builder code(final @NotNull String code) {
+            this.code = code;
             return this;
         }
 
         @Override
-        public @NotNull UserSkeleton build() {
-            return new UserSkeleton(this);
+        public @NotNull RegistrationSkeleton build() {
+            return new RegistrationSkeleton(this);
         }
     }
 }

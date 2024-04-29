@@ -1,75 +1,44 @@
 package cz.jeme.programu.stolujemeapi.db.meal;
 
-import cz.jeme.programu.stolujemeapi.Canteen;
+import cz.jeme.programu.stolujemeapi.canteen.Canteen;
 import cz.jeme.programu.stolujemeapi.db.Entry;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 import java.util.UUID;
 
-public class Meal implements Entry {
-    private final int id;
-    private final @NotNull UUID uuid;
-    private final @NotNull Canteen canteen;
-    private final @NotNull Course course;
-
+public record Meal(
+        int id,
+        @NotNull UUID uuid,
+        @NotNull Course course,
+        @NotNull Canteen canteen,
+        @Nullable String description
+) implements Entry {
     private Meal(final @NotNull Builder builder) {
-        id = Objects.requireNonNull(builder.id, "id");
-        uuid = Objects.requireNonNull(builder.uuid, "mealUuid");
-        course = Objects.requireNonNull(builder.course, "course");
-        canteen = Objects.requireNonNull(builder.canteen, "canteen");
+        this(
+                Objects.requireNonNull(builder.id, "id"),
+                Objects.requireNonNull(builder.uuid, "mealUuid"),
+                Objects.requireNonNull(builder.course, "course"),
+                Objects.requireNonNull(builder.canteen, "canteen"),
+                builder.description
+        );
     }
 
-    @Override
-    public int id() {
-        return id;
+    public enum Course {
+        SOUP,
+        MAIN,
+        ADDITION
     }
 
-    public @NotNull UUID uuid() {
-        return uuid;
-    }
-
-    public @NotNull Course course() {
-        return course;
-    }
-
-    public @NotNull Canteen canteen() {
-        return canteen;
-    }
-
-    @Override
-    public final boolean equals(final @Nullable Object object) {
-        if (this == object) return true;
-        if (!(object instanceof final Meal meal)) return false;
-
-        return id == meal.id && uuid.equals(meal.uuid) && canteen == meal.canteen && course == meal.course;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = id;
-        result = 31 * result + uuid.hashCode();
-        result = 31 * result + canteen.hashCode();
-        result = 31 * result + course.hashCode();
-        return result;
-    }
-
-    @Override
-    public @NotNull String toString() {
-        return "Meal{" +
-               "id=" + id +
-               ", mealUuid=" + uuid +
-               ", canteen=" + canteen +
-               ", course=" + course +
-               '}';
-    }
-
-    static final class Builder implements Entry.Builder<Builder, Meal> {
+    @ApiStatus.Internal
+    public static final class Builder implements Entry.Builder<Builder, Meal> {
         private @Nullable Integer id;
         private @Nullable UUID uuid;
         private @Nullable Canteen canteen;
         private @Nullable Course course;
+        private @Nullable String description;
 
         @Override
         public @NotNull Builder id(final int id) {
@@ -77,18 +46,23 @@ public class Meal implements Entry {
             return this;
         }
 
-        public @NotNull Builder uuid(final @NotNull UUID uuid) {
+        public @NotNull Builder uuid(final @Nullable UUID uuid) {
             this.uuid = uuid;
             return this;
         }
 
-        public @NotNull Builder course(final @NotNull Course course) {
+        public @NotNull Builder course(final @Nullable Course course) {
             this.course = course;
             return this;
         }
 
-        public @NotNull Builder canteen(final @NotNull Canteen canteen) {
+        public @NotNull Builder canteen(final @Nullable Canteen canteen) {
             this.canteen = canteen;
+            return this;
+        }
+
+        public @NotNull Builder description(final @Nullable String description) {
+            this.description = description;
             return this;
         }
 
@@ -96,11 +70,5 @@ public class Meal implements Entry {
         public @NotNull Meal build() {
             return new Meal(this);
         }
-    }
-
-    public enum Course {
-        SOUP,
-        MAIN,
-        ADDITION
     }
 }

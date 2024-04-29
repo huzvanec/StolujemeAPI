@@ -1,12 +1,11 @@
 package cz.jeme.programu.stolujemeapi;
 
+import cz.jeme.programu.stolujemeapi.canteen.Canteen;
 import cz.jeme.programu.stolujemeapi.db.Database;
 import cz.jeme.programu.stolujemeapi.db.meal.MealDao;
 import cz.jeme.programu.stolujemeapi.db.photo.PhotoDao;
 import cz.jeme.programu.stolujemeapi.db.rating.RatingDao;
-import cz.jeme.programu.stolujemeapi.db.session.SessionDao;
 import cz.jeme.programu.stolujemeapi.db.user.UserDao;
-import cz.jeme.programu.stolujemeapi.db.verification.VerificationDao;
 import org.jetbrains.annotations.NotNull;
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
@@ -42,14 +41,15 @@ public class Stolujeme {
         Stolujeme.LOGO.forEach(Stolujeme.LOGGER::info);
 
         // initialize database
-        final Object ignored = Database.INSTANCE;
-        // initialize daos
+        Database.INSTANCE.init();
+        // initialize data access objects
         UserDao.INSTANCE.init();
         MealDao.INSTANCE.init();
-        VerificationDao.INSTANCE.init();
-        SessionDao.INSTANCE.init();
         PhotoDao.INSTANCE.init();
         RatingDao.INSTANCE.init();
+
+        // initialize canteens
+        Canteen.init();
 
         // menu job
         try {
@@ -99,7 +99,8 @@ public class Stolujeme {
             @Override
             public void addCorsMappings(final @NotNull CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("http://localhost:3000");
+                        // TODO
+                        .allowedOrigins("http://localhost:3000", "https://stolu.jeme.cz");
             }
         };
     }
