@@ -1,8 +1,9 @@
 package cz.jeme.programu.stolujemeapi.rest.control;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import cz.jeme.programu.stolujemeapi.canteen.Canteen;
+import cz.jeme.programu.stolujemeapi.EnvVar;
 import cz.jeme.programu.stolujemeapi.Lang;
+import cz.jeme.programu.stolujemeapi.canteen.Canteen;
 import cz.jeme.programu.stolujemeapi.db.CryptoUtils;
 import cz.jeme.programu.stolujemeapi.db.user.*;
 import cz.jeme.programu.stolujemeapi.error.ApiErrorType;
@@ -23,7 +24,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -45,7 +45,7 @@ public final class UserController {
     private static final @NotNull InvalidParamException INVALID_CREDENTIALS = new InvalidParamException(UserController.CREDENTIALS_PLACEHOLDER, ApiErrorType.INVALID_CREDENTIALS);
 
     private final @NotNull UserDao userDao = UserDao.INSTANCE;
-    private final @NotNull String stolujemeEmail = Objects.requireNonNull(System.getenv("EMAIL_USERNAME"), "ENV: EMAIL_USERNAME");
+    private final @NotNull String emailUsername = EnvVar.EMAIL_USERNAME.require();
     private final @NotNull JavaMailSender emailSender;
 
     @Autowired
@@ -130,7 +130,7 @@ public final class UserController {
         final Optional<Registration> oReg = atomicReg.get();
         final String salt = oReg
                 .map(Registration::passwordSalt)
-                .orElse(CryptoUtils.genSalt());
+                .orElseGet(CryptoUtils::genSalt);
         final String hash = oReg
                 .map(Registration::passwordHash)
                 .orElse(CryptoUtils.hash(password, salt));
@@ -151,7 +151,7 @@ public final class UserController {
 
         // send email
         final SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom("Stolujeme <%s>".formatted(stolujemeEmail));
+        message.setFrom("Stolujeme <%s>".formatted(emailUsername));
         message.setTo(email);
         message.setSubject(language.verificationSubject());
         message.setText(language.verification()

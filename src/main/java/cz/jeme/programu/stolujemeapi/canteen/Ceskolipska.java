@@ -35,7 +35,7 @@ public final class Ceskolipska extends Canteen {
             case "P" -> Meal.Course.SOUP;
             case "D" -> Meal.Course.ADDITION;
             default -> {
-                try {
+                try { // validate that it's a number
                     Integer.parseInt(mealType);
                     yield Meal.Course.MAIN;
                 } catch (final NumberFormatException e) {

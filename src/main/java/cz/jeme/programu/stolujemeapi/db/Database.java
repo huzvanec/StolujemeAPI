@@ -1,27 +1,20 @@
 package cz.jeme.programu.stolujemeapi.db;
 
-import cz.jeme.programu.stolujemeapi.Stolujeme;
+import cz.jeme.programu.stolujemeapi.EnvVar;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
-import java.util.Objects;
 
 public enum Database {
     INSTANCE;
 
-    private final @NotNull String url;
-    private final @NotNull String user;
-    private final @NotNull String password;
+    private final @NotNull String url = EnvVar.DATABASE_URL.require();
+    private final @NotNull String user = EnvVar.DATABASE_USER.require();
+    private final @NotNull String password = EnvVar.DATABASE_PASSWORD.require();
     private final @NotNull Logger logger = LoggerFactory.getLogger(getClass());
-
-    Database() {
-        url = Objects.requireNonNull(Stolujeme.args().get("url"), "url");
-        user = Objects.requireNonNull(Stolujeme.args().get("user"), "user");
-        password = Objects.requireNonNull(Stolujeme.args().get("password"), "password");
-    }
 
     @ApiStatus.Internal
     public void init() {

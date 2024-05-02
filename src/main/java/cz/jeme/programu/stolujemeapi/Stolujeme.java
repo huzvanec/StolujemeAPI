@@ -17,10 +17,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @SpringBootApplication
 public class Stolujeme {
@@ -32,13 +29,10 @@ public class Stolujeme {
 
     private static final @NotNull Logger LOGGER = LoggerFactory.getLogger(Stolujeme.class);
 
-    private static @NotNull Map<String, String> args = new HashMap<>();
-
-
     public static void main(final String @NotNull [] args) {
-        Stolujeme.parseArgs(args);
+        EnvVar.class.getEnumConstants(); // load environmental variables
         SpringApplication.run(Stolujeme.class, args);
-        Stolujeme.LOGO.forEach(Stolujeme.LOGGER::info);
+        Stolujeme.LOGO.forEach(Stolujeme.LOGGER::info); // STOLUJEME 😎
 
         // initialize database
         Database.INSTANCE.init();
@@ -60,25 +54,11 @@ public class Stolujeme {
                     .withSchedule(CronScheduleBuilder.dailyAtHourAndMinute(12, 0))
                     .build();
             scheduler.scheduleJob(job, trigger);
-            scheduler.triggerJob(job.getKey());
+            scheduler.triggerJob(job.getKey()); // run the job at the start
             scheduler.start();
         } catch (final SchedulerException e) {
             throw new RuntimeException("Could not create menu job!", e);
         }
-    }
-
-    private static void parseArgs(final String @NotNull [] arguments) {
-        if (arguments.length % 2 != 0)
-            throw new IllegalArgumentException("Arguments passed must be in a key-value format!");
-        for (int arg = 0; arg < arguments.length; arg += 2) {
-            String key = arguments[arg];
-            if (!key.startsWith("-"))
-                throw new IllegalArgumentException("Argument keys must start with a dash!");
-            key = key.substring(1);
-            final String value = arguments[arg + 1];
-            Stolujeme.args.put(key, value);
-        }
-        Stolujeme.args = Collections.unmodifiableMap(Stolujeme.args);
     }
 
     public static @NotNull List<String> logo() {
@@ -89,18 +69,16 @@ public class Stolujeme {
         return Stolujeme.LOGGER;
     }
 
-    public static @NotNull Map<String, String> args() {
-        return Stolujeme.args;
-    }
-
     @Bean
-    protected @NotNull WebMvcConfigurer corsConfig() {
+    protected @NotNull WebMvcConfigurer cors() {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(final @NotNull CorsRegistry registry) {
                 registry.addMapping("/**")
-                        // TODO
-                        .allowedOrigins("http://localhost:3000", "https://stolu.jeme.cz");
+                        .allowedOrigins(
+                                "http://localhost:3000",
+                                "https://stolu.jeme.cz"
+                        ); // TODO
             }
         };
     }

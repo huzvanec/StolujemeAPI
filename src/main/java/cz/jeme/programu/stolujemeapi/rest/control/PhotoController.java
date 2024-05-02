@@ -8,7 +8,7 @@ import com.drew.metadata.exif.ExifSubIFDDirectory;
 import com.drew.metadata.heif.HeifDirectory;
 import com.drew.metadata.jpeg.JpegDirectory;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import cz.jeme.programu.stolujemeapi.Stolujeme;
+import cz.jeme.programu.stolujemeapi.EnvVar;
 import cz.jeme.programu.stolujemeapi.db.meal.Meal;
 import cz.jeme.programu.stolujemeapi.db.meal.MealDao;
 import cz.jeme.programu.stolujemeapi.db.photo.Photo;
@@ -48,7 +48,7 @@ public final class PhotoController {
     }
 
     private final @NotNull InvalidParamException invalidPhoto = new InvalidParamException("photo", ApiErrorType.PHOTO_CONTENTS_INVALID);
-    private final @NotNull File photoDir = new File(Objects.requireNonNull(Stolujeme.args().get("photos"), "photos"));
+    private final @NotNull File photoDir = new File(EnvVar.PHOTO_DIR.require());
 
     {
         if (!photoDir.mkdirs() && !photoDir.isDirectory())
