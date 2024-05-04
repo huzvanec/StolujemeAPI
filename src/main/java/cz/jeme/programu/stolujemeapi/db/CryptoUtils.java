@@ -41,15 +41,15 @@ public final class CryptoUtils {
     }
 
 
-    public static @NotNull String genSalt() {
+    public static @NotNull String randomSalt() {
         return CryptoUtils.gen(CryptoUtils.SALT_LENGTH_BYTES);
     }
 
-    public static @NotNull String genSession() {
+    public static @NotNull String randomSession() {
         return CryptoUtils.gen(CryptoUtils.SESSION_LENGTH_BYTES);
     }
 
-    public static @NotNull String genVerification() {
+    public static @NotNull String randomVerification() {
         return CryptoUtils.gen(CryptoUtils.VERIFICATION_LENGTH_BYTES);
     }
 

@@ -21,7 +21,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.util.UriUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -130,12 +132,12 @@ public final class UserController {
         final Optional<Registration> oReg = atomicReg.get();
         final String salt = oReg
                 .map(Registration::passwordSalt)
-                .orElseGet(CryptoUtils::genSalt);
+                .orElseGet(CryptoUtils::randomSalt);
         final String hash = oReg
                 .map(Registration::passwordHash)
                 .orElse(CryptoUtils.hash(password, salt));
 
-        final String code = CryptoUtils.genVerification();
+        final String code = CryptoUtils.randomVerification();
 
         // create registration
         final Registration registration = userDao.insertRegistration(new RegistrationSkeleton.Builder()
@@ -157,7 +159,7 @@ public final class UserController {
         message.setText(language.verification()
                 .replace("${EMAIL}", email)
                 .replace("${NAME}", name)
-                .replace("${CODE}", code)
+                .replace("${CODE}", UriUtils.encodePathSegment(code, StandardCharsets.UTF_8))
         );
         // TODO
         emailSender.send(message);
@@ -221,13 +223,19 @@ public final class UserController {
                 "password"
         );
 
-        final User user = userDao.userByEmail(email)
-                .orElseThrow(() -> UserController.INVALID_CREDENTIALS);
+        final Optional<User> oUser = userDao.userByEmail(email);
+        if (oUser.isEmpty()) {
+            // hash to create fake delay so that an attacker does not know whether they guessed an email
+            CryptoUtils.hash(password, CryptoUtils.randomSalt());
+            throw UserController.INVALID_CREDENTIALS;
+        }
+
+        final User user = oUser.get();
 
         if (!CryptoUtils.validate(password, user.passwordHash(), user.passwordSalt()))
             throw UserController.INVALID_CREDENTIALS;
 
-        final String token = CryptoUtils.genSession();
+        final String token = CryptoUtils.randomSession();
 
         final Session session = userDao.insertSession(
                 new SessionSkeleton.Builder()

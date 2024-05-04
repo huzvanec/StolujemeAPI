@@ -6,7 +6,7 @@ Uživatelské jméno: ${NAME}
 
 Pokud jsou tyto informace správné a přeješ si dokončit registraci, klikni na odkaz níže:
 
-https://stolu.jeme.cz/verify?code=${CODE}
+https://stolu.jeme.cz/verify/${CODE}
 
 Zdar a skibidi,
 Stolujeme
