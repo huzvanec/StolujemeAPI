@@ -6,7 +6,7 @@ Username: ${NAME}
 
 If this information is correct and you wish to complete your registration, please click the link below:
 
-https://stolu.jeme.cz/${CODE}
+https://stolu.jeme.cz/verify/${CODE}
 
 Zdar a skibidi,
 Stolujeme

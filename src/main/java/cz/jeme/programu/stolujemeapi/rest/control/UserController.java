@@ -17,10 +17,7 @@ import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriUtils;
 
 import java.nio.charset.StandardCharsets;
@@ -305,5 +302,11 @@ public final class UserController {
         public SessionData(final @NotNull Session session) {
             this(session.token(), session.creationTime(), session.expirationTime());
         }
+    }
+
+    @RequestMapping("/test-auth")
+    @ResponseBody
+    private @NotNull Response testAuth() {
+        return new LoginResponse(new SessionData(ApiUtils.authenticate()));
     }
 }
