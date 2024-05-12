@@ -1,6 +1,7 @@
 ---
 name: API bug report
-about: Report a a problem that affects only the API (e.g. registration responds with HTTP 500)
+about: Report a a problem that affects only the API (e.g. registration responds with
+  HTTP 500)
 title: ''
 labels: 'scope: API, type: bug'
 assignees: Mandlemankiller

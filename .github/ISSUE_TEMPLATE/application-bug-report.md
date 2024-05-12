@@ -1,6 +1,7 @@
 ---
 name: Application bug report
-about: Report a a problem that affects the entire application (e.g. registration does not work)
+about: Report a a problem that affects the entire application (e.g. registration does
+  not work)
 title: ''
 labels: 'scope: application, type: bug'
 assignees: Mandlemankiller
