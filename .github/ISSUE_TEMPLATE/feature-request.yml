@@ -1,0 +1,23 @@
+name: Feature request
+description: Suggest an idea for Stolujeme
+assignees: [ Mandlemankiller ]
+labels: [ 'type: feature' ]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this feature request!
+  - type: textarea
+    attributes:
+      label: Feature
+      description: What do you want to happen? Is your feature request related to a problem? What is the solution? Have you considered any alternatives? Please describe.
+      placeholder: I'm always frustrated when [...]
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Additional context
+      description: |
+        Anything else we should know?
+        
+        Tip: You can attach images and other files by clicking this area to highlight it and then dragging files in.

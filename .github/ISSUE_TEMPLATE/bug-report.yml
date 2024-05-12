@@ -59,7 +59,6 @@ body:
     attributes:
       label: Additional context
       description: |
-        Anything else we should know?
+        Anything else we should know? Please attach screenshots and HTTP request & response contents if possible.
         
-        Tip: Please attach screenshots and HTTP request & response contents if possible. It can help explain your issue better.
-        You can attach images or files by clicking this area to highlight it and then dragging files in.
+        Tip: You can attach images and other files by clicking this area to highlight it and then dragging files in.
