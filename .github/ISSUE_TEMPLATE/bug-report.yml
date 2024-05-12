@@ -1,0 +1,65 @@
+name: Bug report
+description: Report a problem with Stolujeme.
+assignees: [ Mandlemankiller ]
+labels: [ 'type: bug' ]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+  - type: textarea
+    attributes:
+      label: Description
+      description: What happened?
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Reproducing
+      description: How to reproduce this behavior?
+      placeholder: |
+        1. Go to '...'
+        2. Click on '....'
+        3. Scroll down to '....'
+        4. See error
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Expected behaviour
+      description: What did you expect to happen?
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: Operating systems
+      description: What operating systems are you seeing this problem on?
+      multiple: true
+      options:
+        - Windows
+        - Android
+        - iOS
+        - macOS
+        - Linux (specify distro in Additional context)
+        - other (tell us in Additional context)
+  - type: dropdown
+    attributes:
+      label: Browsers
+      description: What browsers are you seeing the problem on?
+      multiple: true
+      options:
+        - Firefox
+        - Chrome
+        - Safari
+        - Microsoft Edge
+        - Chromium
+        - Opera GX
+        - other (tell us in Additional context)
+  - type: textarea
+    attributes:
+      label: Additional context
+      description: |
+        Anything else we should know?
+        
+        Tip: Please attach screenshots and HTTP request & response contents if possible. It can help explain your issue better.
+        You can attach images or files by clicking this area to highlight it and then dragging files in.
