@@ -1,6 +1,6 @@
 ---
-name: Application bug report
-about: Report a a problem that affects the entire application (e.g. registration does not work)
+name: Website bug report
+about: Report a a problem that affects only the website (e.g. a typo on the homepage)
 title: ''
 labels: 'scope: application, type: bug'
 assignees: Mandlemankiller
