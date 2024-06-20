@@ -157,15 +157,15 @@ public final class PhotoController {
     ) implements Response {
     }
 
-    @GetMapping("/photo")
+    @GetMapping("/photo/{uuid}")
     @ResponseBody
-    private @NotNull ResponseEntity<InputStreamResource> photo(final @NotNull @RequestBody PhotoGetRequest request) {
+    private @NotNull ResponseEntity<InputStreamResource> photo(final @NotNull @PathVariable("uuid") String photoUuid) {
         ApiUtils.authenticate();
-        final UUID photoUuid = ApiUtils.parseUuid(request.photoUuid(), "photoUuid");
+        final UUID uuid = ApiUtils.parseUuid(photoUuid, "uuid");
 
 
-        final Photo photo = PhotoDao.INSTANCE.photoByUuid(photoUuid)
-                .orElseThrow(() -> new InvalidParamException("photoUuid", ApiErrorType.PHOTO_UUID_INVALID));
+        final Photo photo = PhotoDao.INSTANCE.photoByUuid(uuid)
+                .orElseThrow(() -> new InvalidParamException("uuid", ApiErrorType.PHOTO_UUID_INVALID));
 
 
         try {
@@ -175,11 +175,5 @@ public final class PhotoController {
         } catch (final FileNotFoundException e) {
             throw new RuntimeException("The file does not exist!", e);
         }
-    }
-
-    public record PhotoGetRequest(
-            @JsonProperty("photoUuid")
-            @Nullable String photoUuid
-    ) implements Request {
     }
 }

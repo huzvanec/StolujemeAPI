@@ -13,14 +13,10 @@ import cz.jeme.programu.stolujemeapi.db.user.UserDao;
 import cz.jeme.programu.stolujemeapi.error.ApiErrorType;
 import cz.jeme.programu.stolujemeapi.error.InvalidParamException;
 import cz.jeme.programu.stolujemeapi.rest.ApiUtils;
-import cz.jeme.programu.stolujemeapi.rest.Request;
 import cz.jeme.programu.stolujemeapi.rest.Response;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -34,13 +30,13 @@ public final class MealController {
     private MealController() {
     }
 
-    @GetMapping("/meal")
+    @GetMapping("/meal/{uuid}")
     @ResponseBody
-    private @NotNull Response meal(final @NotNull @RequestBody MealRequest request) {
+    private @NotNull Response meal(final @PathVariable("uuid") @NotNull String mealUuid) {
         ApiUtils.authenticate();
-        final UUID uuid = ApiUtils.parseUuid(request.mealUuid(), "mealUuid");
+        final UUID uuid = ApiUtils.parseUuid(mealUuid, "uuid");
         final Meal meal = MealDao.INSTANCE.mealByUuid(uuid)
-                .orElseThrow(() -> new InvalidParamException("mealUuid", ApiErrorType.MEAL_UUID_INVALID));
+                .orElseThrow(() -> new InvalidParamException("uuid", ApiErrorType.MEAL_UUID_INVALID));
 
         final List<UUID> photoUuids = PhotoDao.INSTANCE.photoByMealId(meal.id()).stream()
                 .map(Photo::uuid)
@@ -50,12 +46,6 @@ public final class MealController {
                 new MealData(meal),
                 photoUuids
         );
-    }
-
-    public record MealRequest(
-            @JsonProperty("mealUuid")
-            @Nullable String mealUuid
-    ) implements Request {
     }
 
     public record MealResponse(
@@ -70,31 +60,33 @@ public final class MealController {
             @JsonProperty("uuid")
             @NotNull UUID uuid,
             @JsonProperty("canteen")
-            @NotNull Canteen canteen,
+            @NotNull String canteen,
             @JsonProperty("course")
             @NotNull Meal.Course course,
             @JsonProperty("description")
             @Nullable String description
     ) {
         public MealData(final @NotNull Meal meal) {
-            this(meal.uuid(), meal.canteen(), meal.course(), meal.description());
+            this(meal.uuid(), meal.canteen().name(), meal.course(), meal.description());
         }
     }
 
     @GetMapping("/menu")
     @ResponseBody
-    private @NotNull Response menu(final @NotNull @RequestBody MenuRequest request) {
+    private @NotNull Response menu(
+            final @Nullable @RequestParam(name = "from-date", required = false) String fromDateStr,
+            final @Nullable @RequestParam(name = "to-date", required = false) String toDateStr) {
         final Session session = ApiUtils.authenticate();
-        final LocalDate fromDate = request.fromDate() == null
+        final LocalDate fromDate = fromDateStr == null
                 ? LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-                : parseDate(request.fromDate(), "fromDate");
+                : parseDate(fromDateStr, "from-date");
 
-        final LocalDate toDate = request.toDate() == null
+        final LocalDate toDate = toDateStr == null
                 ? LocalDate.now().with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY))
-                : parseDate(request.toDate(), "toDate");
+                : parseDate(toDateStr, "to-date");
 
         if (fromDate.isAfter(toDate))
-            throw new InvalidParamException("fromDate", ApiErrorType.DATE_ORDER_INVALID);
+            throw new InvalidParamException("from-date", ApiErrorType.DATE_ORDER_INVALID);
 
         final Canteen canteen = UserDao.INSTANCE.userBySession(session).canteen();
 
@@ -144,14 +136,6 @@ public final class MealController {
         } catch (final DateTimeParseException e) {
             throw new InvalidParamException(paramName, ApiErrorType.DATE_CONTENTS_INVALID);
         }
-    }
-
-    public record MenuRequest(
-            @JsonProperty("fromDate")
-            @Nullable String fromDate,
-            @JsonProperty("toDate")
-            @Nullable String toDate
-    ) implements Request {
     }
 
     public record MenuResponse(
