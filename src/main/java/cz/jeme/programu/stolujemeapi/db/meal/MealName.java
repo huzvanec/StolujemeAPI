@@ -37,7 +37,7 @@ public record MealName(
             return this;
         }
 
-        public @NotNull Builder name(final @NotNull String name) {
+        public @NotNull Builder name(final @Nullable String name) {
             this.name = name;
             return this;
         }

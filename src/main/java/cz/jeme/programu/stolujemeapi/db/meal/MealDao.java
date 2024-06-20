@@ -336,6 +336,31 @@ public enum MealDao implements Dao {
         }
     }
 
+    public @NotNull List<MealName> mealNamesByMealId(final int mealId) {
+        try (final Connection connection = database.connection()) {
+            // language=mariadb
+            final String statementStr = """
+                    SELECT id_meal_name, name
+                    FROM meal_names WHERE id_meal = ?;
+                    """;
+            final ResultWrapper result = StatementWrapper.wrapper(connection.prepareStatement(statementStr))
+                    .setInt(mealId)
+                    .executeQuery();
+
+            final List<MealName> names = new ArrayList<>();
+            while (result.next()) {
+                names.add(new MealName.Builder()
+                        .mealId(mealId)
+                        .id(result.getInt())
+                        .name(result.getString())
+                        .build());
+            }
+            return names;
+        } catch (final SQLException e) {
+            throw new RuntimeException("Could not find meal!", e);
+        }
+    }
+
     public @NotNull MealName insertMealName(final @NotNull MealNameSkeleton skeleton) {
         try (final Connection connection = database.connection()) {
             // language=mariadb

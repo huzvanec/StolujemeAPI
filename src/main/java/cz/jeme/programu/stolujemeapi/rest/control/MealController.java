@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import cz.jeme.programu.stolujemeapi.canteen.Canteen;
 import cz.jeme.programu.stolujemeapi.db.meal.Meal;
 import cz.jeme.programu.stolujemeapi.db.meal.MealDao;
+import cz.jeme.programu.stolujemeapi.db.meal.MealName;
 import cz.jeme.programu.stolujemeapi.db.meal.MenuEntry;
 import cz.jeme.programu.stolujemeapi.db.photo.Photo;
 import cz.jeme.programu.stolujemeapi.db.photo.PhotoDao;
@@ -32,7 +33,7 @@ public final class MealController {
 
     @GetMapping("/meal/{uuid}")
     @ResponseBody
-    private @NotNull Response meal(final @PathVariable("uuid") @NotNull String mealUuid) {
+    private @NotNull Response meal(final @NotNull @PathVariable("uuid") String mealUuid) {
         ApiUtils.authenticate();
         final UUID uuid = ApiUtils.parseUuid(mealUuid, "uuid");
         final Meal meal = MealDao.INSTANCE.mealByUuid(uuid)
@@ -42,8 +43,13 @@ public final class MealController {
                 .map(Photo::uuid)
                 .toList();
 
+        final List<String> mealNames = MealDao.INSTANCE.mealNamesByMealId(meal.id()).stream()
+                .map(MealName::name)
+                .toList();
+
         return new MealResponse(
                 new MealData(meal),
+                mealNames,
                 photoUuids
         );
     }
@@ -51,6 +57,8 @@ public final class MealController {
     public record MealResponse(
             @JsonProperty("meal")
             @NotNull MealData mealData,
+            @JsonProperty("names")
+            @NotNull List<String> names,
             @JsonProperty("photos")
             @NotNull List<UUID> photos
     ) implements Response {
