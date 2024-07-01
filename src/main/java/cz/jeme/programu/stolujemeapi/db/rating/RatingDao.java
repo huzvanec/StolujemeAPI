@@ -153,7 +153,7 @@ public enum RatingDao implements Dao {
 
     public enum RatingRequestType {
         USER("="),
-        OTHERS("<>");
+        GLOBAL("<>");
 
         private final @NotNull String operator;
 

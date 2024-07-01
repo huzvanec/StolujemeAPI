@@ -105,10 +105,10 @@ public final class MealController {
                 session.userId()
         );
 
-        final Map<Integer, Double> othersRatings = RatingDao.INSTANCE.ratingsByDates(
+        final Map<Integer, Double> globalRatings = RatingDao.INSTANCE.ratingsByDates(
                 fromDate,
                 toDate,
-                RatingDao.RatingRequestType.OTHERS,
+                RatingDao.RatingRequestType.GLOBAL,
                 session.userId()
         );
 
@@ -126,7 +126,7 @@ public final class MealController {
                                                 menuEntry.meal(),
                                                 new MenuMealRatingData(
                                                         userRatings.get(menuEntry.meal().id()),
-                                                        othersRatings.get(menuEntry.meal().id())
+                                                        globalRatings.get(menuEntry.meal().id())
                                                 )
                                         )
                                 ),
@@ -184,8 +184,8 @@ public final class MealController {
     public record MenuMealRatingData(
             @JsonProperty("user")
             @Nullable Double userRating,
-            @JsonProperty("others")
-            @Nullable Double othersRating
+            @JsonProperty("global")
+            @Nullable Double globalRating
     ) {
     }
 

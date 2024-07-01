@@ -340,8 +340,11 @@ public enum MealDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
-                    SELECT id_meal_name, name
-                    FROM meal_names WHERE id_meal = ?;
+                    SELECT meal_names.id_meal_name, meal_names.name
+                    FROM meal_names, menu WHERE
+                    meal_names.id_meal = ? AND
+                    meal_names.id_meal_name = menu.id_meal_name
+                    ORDER BY menu.date DESC;
                     """;
             final ResultWrapper result = StatementWrapper.wrapper(connection.prepareStatement(statementStr))
                     .setInt(mealId)
