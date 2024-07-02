@@ -1,17 +1,21 @@
 package cz.jeme.programu.stolujemeapi.db.rating;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import cz.jeme.programu.stolujemeapi.db.Dao;
 import cz.jeme.programu.stolujemeapi.db.Database;
 import cz.jeme.programu.stolujemeapi.sql.ResultWrapper;
 import cz.jeme.programu.stolujemeapi.sql.StatementWrapper;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 public enum RatingDao implements Dao {
     INSTANCE;
@@ -23,18 +27,19 @@ public enum RatingDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String ratingsStatementStr = """
-                    CREATE TABLE IF NOT EXISTS ratings (
-                    id_rating INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                    id_meal MEDIUMINT UNSIGNED NOT NULL,
-                    FOREIGN KEY (id_meal) REFERENCES meals (id_meal),
-                    id_menu MEDIUMINT UNSIGNED NOT NULL,
-                    FOREIGN KEY (id_menu) REFERENCES menu (id_menu),
-                    id_user MEDIUMINT UNSIGNED NOT NULL,
-                    FOREIGN KEY (id_user) REFERENCES users (id_user),
-                    UNIQUE KEY (id_menu, id_user),
-                    rating TINYINT UNSIGNED NOT NULL,
-                    CHECK (rating BETWEEN 1 AND 10),
-                    rating_time DATETIME NOT NULL
+                    CREATE TABLE IF NOT EXISTS ratings
+                    (
+                        id_rating   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                        id_meal     MEDIUMINT UNSIGNED NOT NULL,
+                        FOREIGN KEY (id_meal) REFERENCES meals (id_meal),
+                        id_menu     MEDIUMINT UNSIGNED NOT NULL,
+                        FOREIGN KEY (id_menu) REFERENCES menu (id_menu),
+                        id_user     MEDIUMINT UNSIGNED NOT NULL,
+                        FOREIGN KEY (id_user) REFERENCES users (id_user),
+                        UNIQUE KEY (id_menu, id_user),
+                        rating      TINYINT UNSIGNED   NOT NULL,
+                        CHECK (rating BETWEEN 1 AND 10),
+                        rating_time DATETIME           NOT NULL
                     );
                     """;
             connection.prepareStatement(ratingsStatementStr).execute();
@@ -48,9 +53,10 @@ public enum RatingDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
-                    SELECT 1 FROM ratings
+                    SELECT 1
+                    FROM ratings
                     WHERE id_user = ?
-                    AND id_menu = ?;
+                      AND id_menu = ?;
                     """;
 
             return StatementWrapper.wrapper(connection.prepareStatement(statementStr))
@@ -109,8 +115,11 @@ public enum RatingDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
-                    UPDATE ratings SET rating = ?, rating_time = ?
-                    WHERE id_menu = ? AND id_user = ?;
+                    UPDATE ratings
+                    SET rating      = ?,
+                        rating_time = ?
+                    WHERE id_menu = ?
+                      AND id_user = ?;
                     """;
             final LocalDateTime ratingTime = LocalDateTime.now();
             final int rows = StatementWrapper.wrapper(connection.prepareStatement(statementStr))
@@ -130,10 +139,11 @@ public enum RatingDao implements Dao {
             // language=mariadb
             final String statementStr = """
                     SELECT meals.uuid, AVG(ratings.rating)
-                    FROM ratings, meals
+                    FROM ratings,
+                         meals
                     WHERE ratings.id_user = ?
-                    AND ratings.id_meal = meals.id_meal
-                    GROUP BY meals.uuid;
+                      AND ratings.id_meal = meals.id_meal
+                    GROUP BY 1;
                     """;
             final ResultWrapper result = StatementWrapper.wrapper(connection.prepareStatement(statementStr))
                     .setInt(userId)
@@ -176,11 +186,12 @@ public enum RatingDao implements Dao {
             // \language=mariadb
             final String statementStr = """
                     SELECT menu.id_meal, AVG(ratings.rating)
-                    FROM menu, ratings
+                    FROM menu,
+                         ratings
                     WHERE menu.date BETWEEN ? AND ?
-                    AND ratings.id_user %s ?
-                    AND menu.id_meal = ratings.id_meal
-                    GROUP BY menu.id_meal
+                      AND ratings.id_user %s ?
+                      AND menu.id_meal = ratings.id_meal
+                    GROUP BY 1
                     """
                     // language=reset
                     .formatted(type.operator());
@@ -201,6 +212,48 @@ public enum RatingDao implements Dao {
             return ratings;
         } catch (
                 final SQLException e) {
+            throw new RuntimeException("Could not find ratings!", e);
+        }
+    }
+
+    public record MealRatingData(
+            @JsonProperty("user")
+            @Nullable Double userRating,
+            @JsonProperty("global")
+            @Nullable Double globalRating
+    ) {
+    }
+
+    public @NotNull MealRatingData ratingsByMealId(final int mealId, final int userId) {
+        try (final Connection connection = database.connection()) {
+            // language=mariadb
+            final String userStatementStr = """
+                    SELECT AVG(rating)
+                    FROM ratings
+                    WHERE id_user = ?
+                      AND id_meal = ?;
+                    """;
+            final ResultWrapper userResult = StatementWrapper.wrapper(connection.prepareStatement(userStatementStr))
+                    .setInt(userId)
+                    .setInt(mealId)
+                    .executeQuery();
+            final Double userRating = userResult.next() ? userResult.getNullDouble() : null;
+
+            // language=mariadb
+            final String globalStatementStr = """
+                    SELECT AVG(rating)
+                    FROM ratings
+                    WHERE id_user <> ?
+                      AND id_meal = ?;
+                    """;
+            final ResultWrapper globalResult = StatementWrapper.wrapper(connection.prepareStatement(globalStatementStr))
+                    .setInt(userId)
+                    .setInt(mealId)
+                    .executeQuery();
+            final Double globalRating = globalResult.next() ? globalResult.getNullDouble() : null;
+
+            return new MealRatingData(userRating, globalRating);
+        } catch (final SQLException e) {
             throw new RuntimeException("Could not find ratings!", e);
         }
     }

@@ -23,37 +23,40 @@ public enum MealDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String mealsStatementStr = """
-                    CREATE TABLE IF NOT EXISTS meals (
-                    id_meal MEDIUMINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                    uuid UUID UNIQUE NOT NULL,
-                    canteen VARCHAR(30) NOT NULL,
-                    course VARCHAR(30) NOT NULL,
-                    description VARCHAR(1000) NULL DEFAULT NULL
+                    CREATE TABLE IF NOT EXISTS meals
+                    (
+                        id_meal     MEDIUMINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                        uuid        UUID UNIQUE   NOT NULL,
+                        canteen     VARCHAR(30)   NOT NULL,
+                        course      VARCHAR(30)   NOT NULL,
+                        description VARCHAR(1000) NULL DEFAULT NULL
                     );
                     """;
             connection.prepareStatement(mealsStatementStr).execute();
             // language=mariadb
             final String mealNamesStatementStr = """
-                    CREATE TABLE IF NOT EXISTS meal_names (
-                    id_meal_name MEDIUMINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                    id_meal MEDIUMINT UNSIGNED NOT NULL,
-                    FOREIGN KEY (id_meal) REFERENCES meals (id_meal),
-                    name VARCHAR(500) NOT NULL UNIQUE
+                    CREATE TABLE IF NOT EXISTS meal_names
+                    (
+                        id_meal_name MEDIUMINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                        id_meal      MEDIUMINT UNSIGNED NOT NULL,
+                        FOREIGN KEY (id_meal) REFERENCES meals (id_meal),
+                        name         VARCHAR(500)       NOT NULL UNIQUE
                     );
                     """;
             connection.prepareStatement(mealNamesStatementStr).execute();
             // language=mariadb
             final String menuStatementStr = """
-                    CREATE TABLE IF NOT EXISTS menu (
-                    id_menu MEDIUMINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                    id_meal MEDIUMINT UNSIGNED NOT NULL,
-                    FOREIGN KEY (id_meal) REFERENCES meals (id_meal),
-                    id_meal_name MEDIUMINT UNSIGNED NOT NULL,
-                    FOREIGN KEY (id_meal_name) REFERENCES meal_names (id_meal_name),
-                    uuid UUID UNIQUE NOT NULL,
-                    date DATE NOT NULL,
-                    course_number TINYINT NULL DEFAULT NULL,
-                    CHECK (course_number >= 1)
+                    CREATE TABLE IF NOT EXISTS menu
+                    (
+                        id_menu       MEDIUMINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                        id_meal       MEDIUMINT UNSIGNED NOT NULL,
+                        FOREIGN KEY (id_meal) REFERENCES meals (id_meal),
+                        id_meal_name  MEDIUMINT UNSIGNED NOT NULL,
+                        FOREIGN KEY (id_meal_name) REFERENCES meal_names (id_meal_name),
+                        uuid          UUID UNIQUE        NOT NULL,
+                        date          DATE               NOT NULL,
+                        course_number TINYINT            NULL DEFAULT NULL,
+                        CHECK (course_number >= 1)
                     );
                     """;
             connection.prepareStatement(menuStatementStr).execute();
@@ -69,7 +72,8 @@ public enum MealDao implements Dao {
             // language=mariadb
             final String statementStr = """
                     SELECT uuid, canteen, course, description
-                    FROM meals WHERE id_meal = ?;
+                    FROM meals
+                    WHERE id_meal = ?;
                     """;
             final ResultWrapper result = StatementWrapper.wrapper(connection.prepareStatement(statementStr))
                     .setInt(id)
@@ -93,7 +97,8 @@ public enum MealDao implements Dao {
             // language=mariadb
             final String statementStr = """
                     SELECT id_meal, canteen, course, description
-                    FROM meals WHERE uuid = ?;
+                    FROM meals
+                    WHERE uuid = ?;
                     """;
             final ResultWrapper result = StatementWrapper.wrapper(connection.prepareStatement(statementStr))
                     .setUUID(uuid)
@@ -149,15 +154,24 @@ public enum MealDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
-                    SELECT menu.id_menu, menu.uuid, menu.date, menu.course_number,
+                    SELECT menu.id_menu,
+                           menu.uuid,
+                           menu.date,
+                           menu.course_number,
                            meal_names.name,
-                           meals.id_meal, meals.uuid, meals.canteen,  meals.course, meals.description
-                    FROM menu, meal_names, meals
-                    WHERE date BETWEEN ? AND ?
-                    AND meals.canteen = ?
-                    AND menu.id_meal_name = meal_names.id_meal_name
-                    AND menu.id_meal = meals.id_meal
-                    ORDER BY date;
+                           meals.id_meal,
+                           meals.uuid,
+                           meals.canteen,
+                           meals.course,
+                           meals.description
+                    FROM menu,
+                         meal_names,
+                         meals
+                    WHERE menu.date BETWEEN ? AND ?
+                      AND meals.canteen = ?
+                      AND menu.id_meal_name = meal_names.id_meal_name
+                      AND menu.id_meal = meals.id_meal
+                    ORDER BY menu.date;
                     """;
             final ResultWrapper result = StatementWrapper.wrapper(connection.prepareStatement(statementStr))
                     .setLocalDate(fromDate)
@@ -197,7 +211,9 @@ public enum MealDao implements Dao {
                 final Set<Integer> deletions = new HashSet<>();
                 // language=mariadb
                 final String deletionsStatementStr = """
-                        SELECT id_menu FROM menu WHERE date = ?;
+                        SELECT id_menu
+                        FROM menu
+                        WHERE date = ?;
                         """;
                 final ResultWrapper deletionsResult = wrapper.wrap(connection.prepareStatement(deletionsStatementStr))
                         .setLocalDate(date)
@@ -209,11 +225,12 @@ public enum MealDao implements Dao {
                 for (final MenuEntrySkeleton skeleton : entries) {
                     // language=mariadb
                     final String existenceStatementStr = """
-                            SELECT id_menu FROM menu
+                            SELECT id_menu
+                            FROM menu
                             WHERE date = ?
-                            AND id_meal = ?
-                            AND id_meal_name = ?
-                            AND IFNULL(course_number, -1) = IFNULL(?, -1); -- null-wise equals
+                              AND id_meal = ?
+                              AND id_meal_name = ?
+                              AND IFNULL(course_number, -1) = IFNULL(?, -1); -- null-wise equals
                             """;
                     final ResultWrapper existenceResult = wrapper.wrap(connection.prepareStatement(existenceStatementStr))
                             .setLocalDate(date)
@@ -231,7 +248,9 @@ public enum MealDao implements Dao {
 
                 // language=mariadb
                 final String deleteStatementStr = """
-                        DELETE FROM menu WHERE id_menu = ?;
+                        DELETE
+                        FROM menu
+                        WHERE id_menu = ?
                         """;
                 for (final int deletion : deletions)
                     wrapper.wrap(connection.prepareStatement(deleteStatementStr))
@@ -266,13 +285,21 @@ public enum MealDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
-                    SELECT menu.id_menu, menu.date, menu.course_number,
+                    SELECT menu.id_menu,
+                           menu.date,
+                           menu.course_number,
                            meal_names.name,
-                           meals.id_meal, meals.uuid, meals.canteen,  meals.course, meals.description
-                    FROM menu, meal_names, meals
+                           meals.id_meal,
+                           meals.uuid,
+                           meals.canteen,
+                           meals.course,
+                           meals.description
+                    FROM menu,
+                         meal_names,
+                         meals
                     WHERE menu.uuid = ?
-                    AND menu.id_meal = meals.id_meal
-                    AND menu.id_meal = meal_names.id_meal;
+                      AND menu.id_meal = meals.id_meal
+                      AND menu.id_meal = meal_names.id_meal;
                     """;
             final ResultWrapper result = StatementWrapper.wrapper(connection.prepareStatement(statementStr))
                     .setString(uuid.toString())
@@ -304,7 +331,9 @@ public enum MealDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
-                    SELECT 1 FROM meal_names WHERE name = ?;
+                    SELECT 1
+                    FROM meal_names
+                    WHERE name = ?;
                     """;
             return StatementWrapper.wrapper(connection.prepareStatement(statementStr))
                     .setString(name)
@@ -320,7 +349,8 @@ public enum MealDao implements Dao {
             // language=mariadb
             final String statementStr = """
                     SELECT id_meal_name, id_meal
-                    FROM meal_names WHERE name = ?;
+                    FROM meal_names
+                    WHERE name = ?;
                     """;
             final ResultWrapper result = StatementWrapper.wrapper(connection.prepareStatement(statementStr))
                     .setString(name)
@@ -340,11 +370,13 @@ public enum MealDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
-                    SELECT meal_names.id_meal_name, meal_names.name
-                    FROM meal_names, menu WHERE
-                    meal_names.id_meal = ? AND
-                    meal_names.id_meal_name = menu.id_meal_name
-                    ORDER BY menu.date DESC;
+                    SELECT meal_names.id_meal_name, meal_names.name, MAX(menu.date)
+                    FROM meal_names,
+                         menu
+                    WHERE meal_names.id_meal = ?
+                      AND meal_names.id_meal_name = menu.id_meal_name
+                    GROUP BY 1, 2
+                    ORDER BY 3 DESC;
                     """;
             final ResultWrapper result = StatementWrapper.wrapper(connection.prepareStatement(statementStr))
                     .setInt(mealId)

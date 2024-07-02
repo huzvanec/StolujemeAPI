@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import cz.jeme.programu.stolujemeapi.Stolujeme;
 import cz.jeme.programu.stolujemeapi.rest.Response;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -15,7 +15,7 @@ public final class RootController {
     private RootController() {
     }
 
-    @RequestMapping("/")
+    @GetMapping("/")
     @ResponseBody
     private @NotNull Response root() {
         return new RootResponse();

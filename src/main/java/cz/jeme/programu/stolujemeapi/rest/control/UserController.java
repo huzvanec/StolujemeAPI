@@ -15,6 +15,7 @@ import org.apache.commons.validator.routines.EmailValidator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.web.bind.annotation.*;
@@ -52,7 +53,8 @@ public final class UserController {
         this.emailSender = emailSender;
     }
 
-    @PostMapping("/register")
+    @PostMapping("/auth/register")
+    @ResponseStatus(HttpStatus.CREATED)
     @ResponseBody
     private @NotNull Response register(final @NotNull @RequestBody RegisterRequest request) {
         final String password = ApiUtils.validate(
@@ -185,7 +187,7 @@ public final class UserController {
     ) implements Response {
     }
 
-    @PostMapping("/verify")
+    @PostMapping("/auth/verify")
     @ResponseBody
     private @NotNull Response verify(final @NotNull @RequestBody VerifyRequest request) {
         final String code = ApiUtils.require(request.code(), "code");
@@ -207,7 +209,7 @@ public final class UserController {
     ) implements Request {
     }
 
-    @PostMapping("/log-in")
+    @PostMapping("/auth/log-in")
     @ResponseBody
     private @NotNull Response logIn(final @NotNull @RequestBody LoginRequest request) {
         final String email = ApiUtils.require(
@@ -260,24 +262,13 @@ public final class UserController {
     ) implements Response {
     }
 
-    @PostMapping("/log-out")
+    @PostMapping("/auth/log-out")
     @ResponseBody
     private @NotNull Response logout() {
         final Session session = ApiUtils.authenticate();
         if (!userDao.endSession(session.id()))
             throw new RuntimeException("Session could not be ended!");
         return ApiUtils.emptyResponse();
-    }
-
-    public record UserData(
-            @JsonProperty("email")
-            @NotNull String email,
-            @JsonProperty("name")
-            @NotNull String name
-    ) {
-        public UserData(final @NotNull User user) {
-            this(user.email(), user.name());
-        }
     }
 
     public record RegistrationData(
@@ -304,7 +295,7 @@ public final class UserController {
         }
     }
 
-    @RequestMapping("/test-auth")
+    @GetMapping("/auth/session")
     @ResponseBody
     private @NotNull Response testAuth() {
         return new LoginResponse(new SessionData(ApiUtils.authenticate()));

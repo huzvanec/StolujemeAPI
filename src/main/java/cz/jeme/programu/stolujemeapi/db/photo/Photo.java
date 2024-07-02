@@ -16,6 +16,7 @@ public record Photo(
         int userId,
         @NotNull UUID uuid,
         @NotNull File file,
+        long fileSize,
         @NotNull LocalDateTime uploadedTime
 ) implements Entry {
     private Photo(final @NotNull Builder builder) {
@@ -25,6 +26,7 @@ public record Photo(
                 Objects.requireNonNull(builder.userId, "userId"),
                 Objects.requireNonNull(builder.uuid, "mealUuid"),
                 Objects.requireNonNull(builder.file, "file"),
+                Objects.requireNonNull(builder.fileSize, "fileSize"),
                 Objects.requireNonNull(builder.uploadedTime, "uploadedTime")
         );
         if (!file.exists())
@@ -38,6 +40,7 @@ public record Photo(
         private @Nullable Integer userId;
         private @Nullable UUID uuid;
         private @Nullable File file;
+        private @Nullable Long fileSize;
         private @Nullable LocalDateTime uploadedTime;
 
         @Override
@@ -68,6 +71,11 @@ public record Photo(
 
         public @NotNull Builder file(final @Nullable File file) {
             this.file = file;
+            return this;
+        }
+
+        public @NotNull Builder fileSize(final long fileSize) {
+            this.fileSize = fileSize;
             return this;
         }
 

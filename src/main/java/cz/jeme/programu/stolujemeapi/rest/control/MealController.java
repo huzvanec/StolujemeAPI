@@ -31,15 +31,15 @@ public final class MealController {
     private MealController() {
     }
 
-    @GetMapping("/meal/{uuid}")
+    @GetMapping("/meals/{mealUuid}")
     @ResponseBody
-    private @NotNull Response meal(final @NotNull @PathVariable("uuid") String mealUuid) {
-        ApiUtils.authenticate();
-        final UUID uuid = ApiUtils.parseUuid(mealUuid, "uuid");
+    private @NotNull Response meal(final @NotNull @PathVariable("mealUuid") String mealUuid) {
+        final Session session = ApiUtils.authenticate();
+        final UUID uuid = ApiUtils.parseUuid(mealUuid, "mealUuid");
         final Meal meal = MealDao.INSTANCE.mealByUuid(uuid)
-                .orElseThrow(() -> new InvalidParamException("uuid", ApiErrorType.MEAL_UUID_INVALID));
+                .orElseThrow(() -> new InvalidParamException("mealUuid", ApiErrorType.MEAL_UUID_INVALID));
 
-        final List<UUID> photoUuids = PhotoDao.INSTANCE.photoByMealId(meal.id()).stream()
+        final List<UUID> photoUuids = PhotoDao.INSTANCE.photosByMealId(meal.id()).stream()
                 .map(Photo::uuid)
                 .toList();
 
@@ -47,35 +47,51 @@ public final class MealController {
                 .map(MealName::name)
                 .toList();
 
-        return new MealResponse(
-                new MealData(meal),
+        final RatingDao.MealRatingData ratingData = RatingDao.INSTANCE.ratingsByMealId(meal.id(), session.userId());
+
+        return new MealResponse(new MealData(
+                meal,
+                ratingData,
                 mealNames,
                 photoUuids
-        );
+        ));
     }
 
     public record MealResponse(
             @JsonProperty("meal")
-            @NotNull MealData mealData,
-            @JsonProperty("names")
-            @NotNull List<String> names,
-            @JsonProperty("photos")
-            @NotNull List<UUID> photos
+            @NotNull MealData mealData
     ) implements Response {
     }
 
     public record MealData(
-            @JsonProperty("uuid")
-            @NotNull UUID uuid,
             @JsonProperty("canteen")
             @NotNull String canteen,
+            @JsonProperty("uuid")
+            @NotNull UUID uuid,
             @JsonProperty("course")
             @NotNull Meal.Course course,
             @JsonProperty("description")
-            @Nullable String description
+            @Nullable String description,
+            @JsonProperty("ratings")
+            @NotNull RatingDao.MealRatingData ratingData,
+            @JsonProperty("names")
+            @NotNull List<String> names,
+            @JsonProperty("photos")
+            @NotNull List<UUID> photos
     ) {
-        public MealData(final @NotNull Meal meal) {
-            this(meal.uuid(), meal.canteen().name(), meal.course(), meal.description());
+        public MealData(final @NotNull Meal meal,
+                        final @NotNull RatingDao.MealRatingData ratingData,
+                        final @NotNull List<String> names,
+                        final @NotNull List<UUID> photos) {
+            this(
+                    meal.canteen().name(),
+                    meal.uuid(),
+                    meal.course(),
+                    meal.description(),
+                    ratingData,
+                    names,
+                    photos
+            );
         }
     }
 
@@ -124,7 +140,7 @@ public final class MealController {
                                         menuEntry.uuid(),
                                         new MenuMealData(
                                                 menuEntry.meal(),
-                                                new MenuMealRatingData(
+                                                new RatingDao.MealRatingData(
                                                         userRatings.get(menuEntry.meal().id()),
                                                         globalRatings.get(menuEntry.meal().id())
                                                 )
@@ -171,22 +187,14 @@ public final class MealController {
             @NotNull UUID uuid,
             @JsonProperty("course")
             @NotNull Meal.Course course,
-            @JsonProperty("ratings")
-            @NotNull MenuMealRatingData ratingData,
             @JsonProperty("description")
-            @Nullable String description
+            @Nullable String description,
+            @JsonProperty("ratings")
+            @NotNull RatingDao.MealRatingData ratingData
     ) {
-        public MenuMealData(final @NotNull Meal meal, final @NotNull MenuMealRatingData ratingData) {
-            this(meal.uuid(), meal.course(), ratingData, meal.description());
+        public MenuMealData(final @NotNull Meal meal, final @NotNull RatingDao.MealRatingData ratingData) {
+            this(meal.uuid(), meal.course(), meal.description(), ratingData);
         }
-    }
-
-    public record MenuMealRatingData(
-            @JsonProperty("user")
-            @Nullable Double userRating,
-            @JsonProperty("global")
-            @Nullable Double globalRating
-    ) {
     }
 
     public enum MenuEntryDataComparator implements Comparator<MenuEntryData> {

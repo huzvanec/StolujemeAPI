@@ -34,7 +34,7 @@ public enum ApiErrorType {
     USER_ALREADY_VERIFIED("this user is already verified"),
     VERIFICATION_CODE_INVALID("the provided code does not match any existing verification code"),
     VERIFICATION_EXPIRED("this verification has already expired or the user was already verified"),
-    UUID_CONTENTS_INVALID("this mealUuid is invalid"),
+    UUID_CONTENTS_INVALID("this uuid is invalid"),
     MEAL_UUID_INVALID("this meal does not exist"),
     PHOTO_CONTENTS_INVALID("an error occurred while trying to process the photo"),
     PHOTO_UUID_INVALID("this photo does not exist"),

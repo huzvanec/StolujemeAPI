@@ -25,18 +25,17 @@ public enum PhotoDao implements Dao {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String photosStatementStr = """
-                    CREATE TABLE IF NOT EXISTS photos (
-                    id_photo MEDIUMINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                    id_meal MEDIUMINT UNSIGNED NOT NULL,
-                    id_user MEDIUMINT UNSIGNED NOT NULL,
-                    uuid UUID UNIQUE NOT NULL,
-                    path VARCHAR(1000) UNIQUE NOT NULL,
-                    file_size INT UNSIGNED NOT NULL,
-                    upload_time DATETIME NOT NULL,
-                    CONSTRAINT `fk_photo_meal`
+                    CREATE TABLE IF NOT EXISTS photos
+                    (
+                        id_photo    MEDIUMINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                        id_meal     MEDIUMINT UNSIGNED   NOT NULL,
                         FOREIGN KEY (id_meal) REFERENCES meals (id_meal),
-                    CONSTRAINT `fk_photo_user`
-                        FOREIGN KEY (id_user) REFERENCES users (id_user)
+                        id_user     MEDIUMINT UNSIGNED   NOT NULL,
+                        FOREIGN KEY (id_user) REFERENCES users (id_user),
+                        uuid        UUID UNIQUE          NOT NULL,
+                        path        VARCHAR(1000) UNIQUE NOT NULL,
+                        file_size   BIGINT    UNSIGNED   NOT NULL,
+                        upload_time DATETIME             NOT NULL
                     );
                     """;
             connection.prepareStatement(photosStatementStr).execute();
@@ -50,7 +49,8 @@ public enum PhotoDao implements Dao {
             // language=mariadb
             final String statementStr = """
                     SELECT id_photo, id_meal, id_user, path, upload_time
-                    FROM photos WHERE uuid = ?;
+                    FROM photos
+                    WHERE uuid = ?;
                     """;
             final ResultWrapper result = StatementWrapper.wrapper(connection.prepareStatement(statementStr))
                     .setUUID(uuid)
@@ -77,13 +77,14 @@ public enum PhotoDao implements Dao {
                     INSERT INTO photos (id_meal, id_user, uuid, path, file_size, upload_time)
                     VALUES (?, ?, ?, ?, ?, ?);
                     """;
+            final long fileSize = skeleton.file().length();
             final LocalDateTime creationTime = LocalDateTime.now();
             final ResultWrapper result = StatementWrapper.wrapper(connection.prepareStatement(statementStr, Statement.RETURN_GENERATED_KEYS))
                     .setInt(skeleton.mealId())
                     .setInt(skeleton.userId())
                     .setUUID(skeleton.uuid())
                     .setFile(skeleton.file())
-                    .setInt((int) skeleton.file().length())
+                    .setLong(fileSize)
                     .setLocalDateTime(creationTime)
                     .executeGenerate();
 
@@ -95,18 +96,20 @@ public enum PhotoDao implements Dao {
                     .uploadedTime(creationTime)
                     .uuid(skeleton.uuid())
                     .file(skeleton.file())
+                    .fileSize(fileSize)
                     .build();
         } catch (final SQLException e) {
             throw new RuntimeException("Could not create photo!", e);
         }
     }
 
-    public @NotNull List<Photo> photoByMealId(final int mealId) {
+    public @NotNull List<Photo> photosByMealId(final int mealId) {
         try (final Connection connection = database.connection()) {
             // language=mariadb
             final String statementStr = """
-                    SELECT id_photo, id_user, uuid, path, upload_time
-                    FROM photos WHERE id_meal = ?;
+                    SELECT id_photo, id_user, uuid, path, file_size, upload_time
+                    FROM photos
+                    WHERE id_meal = ?;
                     """;
             final ResultWrapper result = StatementWrapper.wrapper(connection.prepareStatement(statementStr))
                     .setInt(mealId)
@@ -120,6 +123,7 @@ public enum PhotoDao implements Dao {
                         .mealId(mealId)
                         .uuid(result.getUUID())
                         .file(result.getFile())
+                        .fileSize(result.getLong())
                         .uploadedTime(result.getLocalDateTime())
                         .build()
                 );

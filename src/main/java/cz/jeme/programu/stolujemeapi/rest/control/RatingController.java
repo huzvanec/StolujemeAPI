@@ -13,9 +13,9 @@ import cz.jeme.programu.stolujemeapi.rest.Request;
 import cz.jeme.programu.stolujemeapi.rest.Response;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -29,15 +29,17 @@ public final class RatingController {
         return ApiErrorType.OK;
     }
 
-    @PostMapping("/rate")
+    @PutMapping("/menu/{menuUuid}/rating")
+    @ResponseStatus(HttpStatus.CREATED)
     @ResponseBody
-    private @NotNull Response rate(final @NotNull @RequestBody RateRequest request) {
+    private @NotNull Response rate(final @NotNull @RequestBody RateRequest request,
+                                   final @NotNull @PathVariable("menuUuid") String menuUuidStr) {
         final Session session = ApiUtils.authenticate();
         final int ratingValue = ApiUtils.validate(request.rating(),
                 "rating",
                 this::ratingValid
         );
-        final UUID menuUuid = ApiUtils.parseUuid(request.menuUuid(), "menuUuid");
+        final UUID menuUuid = ApiUtils.parseUuid(menuUuidStr, "menuUuid");
         final MenuEntry menuEntry = MealDao.INSTANCE.menuEntryByUuid(menuUuid)
                 .orElseThrow(() -> new InvalidParamException("menuUuid", ApiErrorType.MENU_UUID_INVALID));
         RatingDao.INSTANCE.rate(new RatingSkeleton.Builder()
@@ -51,25 +53,28 @@ public final class RatingController {
     }
 
     public record RateRequest(
-            @JsonProperty("menuUuid")
-            @Nullable String menuUuid,
             @JsonProperty("rating")
             @Nullable Integer rating
     ) implements Request {
     }
 
-    @GetMapping("/ratings")
+    @GetMapping("/menu/{menuUuid}/rating")
     @ResponseBody
-    private @NotNull Response ratings() {
+    private @NotNull Response rating(final @NotNull @PathVariable("menuUuid") String menuUuidStr) {
         final Session session = ApiUtils.authenticate();
-        return new RatingsResponse(
-                RatingDao.INSTANCE.ratingsByUserId(session.userId())
+
+        final UUID menuUuid = ApiUtils.parseUuid(menuUuidStr, "menuUuid");
+        final MenuEntry menuEntry = MealDao.INSTANCE.menuEntryByUuid(menuUuid)
+                .orElseThrow(() -> new InvalidParamException("menuUuid", ApiErrorType.MENU_UUID_INVALID));
+
+        return new RatingResponse(
+                RatingDao.INSTANCE.ratingsByMealId(menuEntry.meal().id(), session.userId())
         );
     }
 
-    public record RatingsResponse(
+    public record RatingResponse(
             @JsonProperty("ratings")
-            @NotNull Map<UUID, Double> ratings
+            @NotNull RatingDao.MealRatingData ratingData
     ) implements Response {
     }
 }
