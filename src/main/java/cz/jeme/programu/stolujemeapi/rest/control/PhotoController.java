@@ -18,6 +18,7 @@ import cz.jeme.programu.stolujemeapi.db.user.Session;
 import cz.jeme.programu.stolujemeapi.db.user.User;
 import cz.jeme.programu.stolujemeapi.db.user.UserDao;
 import cz.jeme.programu.stolujemeapi.error.ApiErrorType;
+import cz.jeme.programu.stolujemeapi.error.ApiException;
 import cz.jeme.programu.stolujemeapi.error.InvalidParamException;
 import cz.jeme.programu.stolujemeapi.rest.ApiUtils;
 import cz.jeme.programu.stolujemeapi.rest.Response;
@@ -221,6 +222,24 @@ public final class PhotoController {
             @JsonProperty("uploadedTime")
             @NotNull LocalDateTime uploadedTime
     ) {
+    }
+
+    @DeleteMapping("/meals/{mealUuid}/photos/{photoUuid}")
+    @ResponseBody
+    private @NotNull Response deletePhoto(final @NotNull @PathVariable("mealUuid") String mealUuidStr,
+                                          final @NotNull @PathVariable("photoUuid") String photoUuidStr) {
+        final Session session = ApiUtils.authenticate();
+        final Photo photo = getPhotoByUuidMealUuid(mealUuidStr, photoUuidStr);
+        if (session.userId() != photo.userId())
+            throw new ApiException(HttpStatus.FORBIDDEN, ApiErrorType.PHOTO_PERMISSION_DENIED);
+
+        if (!PhotoDao.INSTANCE.deletePhotoByUuid(photo.uuid()))
+            throw new RuntimeException("Could not delete photo from database by uuid!");
+
+        if (!photo.file().delete())
+            throw new RuntimeException("Could not delete photo from disk!");
+
+        return ApiUtils.emptyResponse();
     }
 
 

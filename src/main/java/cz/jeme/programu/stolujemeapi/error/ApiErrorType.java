@@ -45,7 +45,8 @@ public enum ApiErrorType {
     DATE_CONTENTS_INVALID("dates must be in format yyyy-MM-dd"),
     DATE_ORDER_INVALID("dates are in an incorrect order"),
     LANGUAGE_INVALID("this language does not exist"),
-    MENU_UUID_INVALID("this menu does not exist");
+    MENU_UUID_INVALID("this menu does not exist"),
+    PHOTO_PERMISSION_DENIED("You do not have permission to manipulate with this photo");
 
     private final @Nullable String message;
 

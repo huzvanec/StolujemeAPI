@@ -103,6 +103,31 @@ public enum PhotoDao implements Dao {
         }
     }
 
+    public boolean deletePhotoByUuid(final @NotNull UUID uuid) {
+        try (final Connection connection = database.connection()) {
+            connection.setAutoCommit(false);
+            try {
+                // language=mariadb
+                final String statementStr = """
+                        DELETE
+                        FROM photos
+                        WHERE uuid = ?;
+                        """;
+                final int rows = StatementWrapper.wrapper(connection.prepareStatement(statementStr))
+                        .setUUID(uuid)
+                        .executeUpdate();
+
+                connection.commit();
+                return rows > 0;
+            } catch (final SQLException e) {
+                connection.rollback();
+                throw e;
+            }
+        } catch (final SQLException e) {
+            throw new RuntimeException("Could not delete photo!", e);
+        }
+    }
+
     public @NotNull List<Photo> photosByMealId(final int mealId) {
         try (final Connection connection = database.connection()) {
             // language=mariadb

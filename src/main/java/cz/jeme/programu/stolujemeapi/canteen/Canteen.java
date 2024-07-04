@@ -60,6 +60,7 @@ public abstract class Canteen {
             throw new RuntimeException("Could not find canteen constructor!", e);
         }
 
+        // lock registries
         Canteen.classed = Collections.unmodifiableMap(Canteen.classed);
         Canteen.numbered = Collections.unmodifiableMap(Canteen.numbered);
         Canteen.named = Collections.unmodifiableMap(Canteen.named);

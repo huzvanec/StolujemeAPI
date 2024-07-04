@@ -31,7 +31,7 @@ public class Stolujeme {
 
     public static void main(final String @NotNull [] args) {
         EnvVar.class.getEnumConstants(); // load environmental variables
-        SpringApplication.run(Stolujeme.class, args);
+        SpringApplication.run(Stolujeme.class, args); // start spring boot
         Stolujeme.LOGO.forEach(Stolujeme.LOGGER::info); // STOLUJEME 😎
 
         // initialize database
@@ -76,7 +76,7 @@ public class Stolujeme {
             public void addCorsMappings(final @NotNull CorsRegistry registry) {
                 registry.addMapping("/**")
                         .allowedOrigins(
-                                "http://localhost:3000",
+                                "http://localhost:5173",
                                 "https://stolu.jeme.cz"
                         ); // TODO
             }
