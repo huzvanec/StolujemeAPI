@@ -21,7 +21,7 @@ public final class Ceskolipska extends Canteen {
 
     @Override
     public boolean emailValid(final @NotNull String email) {
-        return email.endsWith("@ceskolipska.cz"); // TODO
+        return email.endsWith("@email.cz"); // TODO
     }
 
     @Override

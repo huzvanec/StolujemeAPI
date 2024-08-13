@@ -65,7 +65,6 @@ public final class MenuJob implements Job {
                 final String name = mealData.get("nazev").asText();
                 if (!canteen.mealValid(mealData))
                     continue; // the canteen has dementia and this meal is just a placeholder
-
                 final String type = mealData.get("druh").asText();
                 final Meal.Course course = canteen.translateCourse(type);
                 final Integer courseNumber = course == Meal.Course.MAIN ? Integer.parseInt(type) : null;

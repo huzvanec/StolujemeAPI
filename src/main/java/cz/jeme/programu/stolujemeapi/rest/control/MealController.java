@@ -114,17 +114,23 @@ public final class MealController {
 
         final Canteen canteen = UserDao.INSTANCE.userBySession(session).canteen();
 
-        final Map<Integer, Double> userRatings = RatingDao.INSTANCE.ratingsByDates(
+        final Map<Integer, Double> userRatings = RatingDao.INSTANCE.averageRatingsByDates(
                 fromDate,
                 toDate,
                 RatingDao.RatingRequestType.USER,
                 session.userId()
         );
 
-        final Map<Integer, Double> globalRatings = RatingDao.INSTANCE.ratingsByDates(
+        final Map<Integer, Double> globalRatings = RatingDao.INSTANCE.averageRatingsByDates(
                 fromDate,
                 toDate,
                 RatingDao.RatingRequestType.GLOBAL,
+                session.userId()
+        );
+
+        final Map<Integer, Integer> currentRatings = RatingDao.INSTANCE.currentRatingsByDates(
+                fromDate,
+                toDate,
                 session.userId()
         );
 
@@ -138,6 +144,7 @@ public final class MealController {
                                         menuEntry.mealName(),
                                         menuEntry.courseNumber(),
                                         menuEntry.uuid(),
+                                        currentRatings.get(menuEntry.id()),
                                         new MenuMealData(
                                                 menuEntry.meal(),
                                                 new RatingDao.MealRatingData(
@@ -177,6 +184,8 @@ public final class MealController {
             @Nullable Integer courseNumber,
             @JsonProperty("uuid")
             @NotNull UUID uuid,
+            @JsonProperty("currentRating")
+            @Nullable Integer rating,
             @JsonProperty("meal")
             @NotNull MenuMealData mealData
     ) {

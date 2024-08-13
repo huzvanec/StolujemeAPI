@@ -38,7 +38,7 @@ public enum RatingDao implements Dao {
                         FOREIGN KEY (id_user) REFERENCES users (id_user),
                         UNIQUE KEY (id_menu, id_user),
                         rating      TINYINT UNSIGNED   NOT NULL,
-                        CHECK (rating BETWEEN 1 AND 10),
+                        CHECK (rating BETWEEN 1 AND 5),
                         rating_time DATETIME           NOT NULL
                     );
                     """;
@@ -176,10 +176,10 @@ public enum RatingDao implements Dao {
         }
     }
 
-    public @NotNull Map<Integer, Double> ratingsByDates(final @NotNull LocalDate fromDate,
-                                                        final @NotNull LocalDate toDate,
-                                                        final @NotNull RatingRequestType type,
-                                                        final int userId) {
+    public @NotNull Map<Integer, Double> averageRatingsByDates(final @NotNull LocalDate fromDate,
+                                                               final @NotNull LocalDate toDate,
+                                                               final @NotNull RatingRequestType type,
+                                                               final int userId) {
         if (fromDate.isAfter(toDate))
             throw new IllegalArgumentException("From date is after to date!");
         try (final Connection connection = database.connection()) {
@@ -207,6 +207,42 @@ public enum RatingDao implements Dao {
                 ratings.put(
                         result.getInt(),
                         result.getDouble()
+                );
+            }
+            return ratings;
+        } catch (
+                final SQLException e) {
+            throw new RuntimeException("Could not find ratings!", e);
+        }
+    }
+
+    public @NotNull Map<Integer, Integer> currentRatingsByDates(final @NotNull LocalDate fromDate,
+                                                                final @NotNull LocalDate toDate,
+                                                                final int userId) {
+        if (fromDate.isAfter(toDate))
+            throw new IllegalArgumentException("From date is after to date!");
+        try (final Connection connection = database.connection()) {
+            // language=mariadb
+            final String statementStr = """
+                    SELECT ratings.id_menu, ratings.rating
+                    FROM ratings,
+                         menu
+                    WHERE menu.date BETWEEN ? AND ?
+                      AND ratings.id_user = ?
+                      AND menu.id_menu = ratings.id_menu
+                    """;
+            final ResultWrapper result = StatementWrapper.wrapper(connection.prepareStatement(statementStr))
+                    .setLocalDate(fromDate)
+                    .setLocalDate(toDate)
+                    .setInt(userId)
+                    .executeQuery();
+
+            final Map<Integer, Integer> ratings = new HashMap<>();
+
+            while (result.next()) {
+                ratings.put(
+                        result.getInt(),
+                        result.getInt()
                 );
             }
             return ratings;

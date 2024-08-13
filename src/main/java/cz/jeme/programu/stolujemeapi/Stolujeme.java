@@ -75,6 +75,7 @@ public class Stolujeme {
             @Override
             public void addCorsMappings(final @NotNull CorsRegistry registry) {
                 registry.addMapping("/**")
+                        .allowedMethods("GET", "POST", "PUT", "DELETE")
                         .allowedOrigins(
                                 "http://localhost:5173",
                                 "https://stolu.jeme.cz"

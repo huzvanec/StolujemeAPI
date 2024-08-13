@@ -7,6 +7,7 @@ import cz.jeme.programu.stolujemeapi.db.rating.RatingDao;
 import cz.jeme.programu.stolujemeapi.db.rating.RatingSkeleton;
 import cz.jeme.programu.stolujemeapi.db.user.Session;
 import cz.jeme.programu.stolujemeapi.error.ApiErrorType;
+import cz.jeme.programu.stolujemeapi.error.ApiException;
 import cz.jeme.programu.stolujemeapi.error.InvalidParamException;
 import cz.jeme.programu.stolujemeapi.rest.ApiUtils;
 import cz.jeme.programu.stolujemeapi.rest.Request;
@@ -16,15 +17,19 @@ import org.jetbrains.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 @RestController
 public final class RatingController {
+    private static final int OLDEST_RATING_MENU = 7; // the oldest menu entry that can be rated (in days from current date)
+
     private RatingController() {
     }
 
     public @NotNull ApiErrorType ratingValid(final int rating) {
-        if (rating < 1 || rating > 10)
+        if (rating < 1 || rating > 5)
             return ApiErrorType.RATING_INVALID;
         return ApiErrorType.OK;
     }
@@ -42,6 +47,8 @@ public final class RatingController {
         final UUID menuUuid = ApiUtils.parseUuid(menuUuidStr, "menuUuid");
         final MenuEntry menuEntry = MealDao.INSTANCE.menuEntryByUuid(menuUuid)
                 .orElseThrow(() -> new InvalidParamException("menuUuid", ApiErrorType.MENU_UUID_INVALID));
+        if (ChronoUnit.DAYS.between(menuEntry.date(), LocalDate.now()) > RatingController.OLDEST_RATING_MENU)
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, ApiErrorType.MENU_TOO_OLD);
         RatingDao.INSTANCE.rate(new RatingSkeleton.Builder()
                 .mealId(menuEntry.meal().id())
                 .menuId(menuEntry.id())

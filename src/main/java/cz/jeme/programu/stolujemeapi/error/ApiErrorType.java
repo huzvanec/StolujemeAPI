@@ -41,12 +41,13 @@ public enum ApiErrorType {
     EMAIL_CANTEEN_INVALID("stolujeme is currently in development and is only available to users from certain canteens"),
     MISSING_AUTHENTICATION("Missing authentication (bearer token)"),
     AUTHENTICATION_INVALID("Invalid authentication"),
-    RATING_INVALID("ratings must be between 1 and 10"),
+    RATING_INVALID("ratings must be between 1 and 5"),
     DATE_CONTENTS_INVALID("dates must be in format yyyy-MM-dd"),
     DATE_ORDER_INVALID("dates are in an incorrect order"),
     LANGUAGE_INVALID("this language does not exist"),
     MENU_UUID_INVALID("this menu does not exist"),
-    PHOTO_PERMISSION_DENIED("You do not have permission to manipulate with this photo");
+    PHOTO_PERMISSION_DENIED("You do not have permission to manipulate with this photo"),
+    MENU_TOO_OLD("This menu is too old to be rated");
 
     private final @Nullable String message;
 

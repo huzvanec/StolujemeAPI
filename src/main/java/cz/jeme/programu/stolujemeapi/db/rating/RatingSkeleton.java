@@ -11,7 +11,7 @@ public record RatingSkeleton(
         int mealId,
         int menuId,
         int userId,
-        @Range(from = 1, to = 10) int rating
+        @Range(from = 1, to = 5) int rating
 ) implements Skeleton {
     private RatingSkeleton(final @NotNull Builder builder) {
         this(
@@ -26,7 +26,7 @@ public record RatingSkeleton(
         private @Nullable Integer mealId;
         private @Nullable Integer menuId;
         private @Nullable Integer userId;
-        @Range(from = 1, to = 10)
+        @Range(from = 1, to = 5)
         private @Nullable Integer rating;
 
         public @NotNull Builder mealId(final int mealId) {
